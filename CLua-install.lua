@@ -1,14 +1,8 @@
-<<<<<<< HEAD
 --[[
   I know this downloader is overkill for two files, but I plan to have standard libraries that get downloaded as well.
   With this, I can add them very easily.
 ]]
 local isDebug = false -- set to true to if you like to live on the edge!
-=======
-
-local isDebug = false
-
->>>>>>> master
 local logName = '/clua-install.log'
 local success = true
 local failReasons = {}
@@ -147,13 +141,8 @@ else
   for _,v in ipairs(failReasons) do
     log(v, '[ERROR]')
   end
-<<<<<<< HEAD
   print('See clua-install.log for more info')
 end
 print('Rebooting to apply environment settings...')
 sleep(3)
 os.reboot()
-=======
-  print('See clua-install.log for info')
-end
->>>>>>> master
