@@ -5,7 +5,7 @@ local outFileName = tArg[2] -- We wait to open this so we don't lock the file on
 local doLog = tArg[3] and true or false -- clean up tArg[3] so it's always boolean
 
 if not (tArg[1] and tArg[2]) then
-  return print('Usage: clua <input> <output>\nAdd any third argument to enable logging.')
+  return print('CLua '..CLUA_VERSION..' Copyright 2014 Skwerlman\nUsage: clua <input> <output>\nAdd any third argument to enable logging.')
 end
 
 if fs.exists(CLUA_LOG) then

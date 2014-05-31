@@ -1,18 +1,17 @@
-
-local isDebug = false
-
+--[[
+  I know this downloader is overkill for two files, but I plan to have standard libraries that get downloaded as well.
+  With this, I can add them very easily.
+]]
+local isDebug = false -- set to true to if you like to live on the edge!
 local logName = '/clua-install.log'
-
 local success = true
 local failReasons = {}
-
 if fs.exists(logName) then
   if fs.exists(logName..'.old') then
     fs.delete(logName..'.old')
   end
   fs.move(logName, logName..'.old')
 end
-
 local function log(msg, tag)
   tag = tag or (msg and '[OKAY]' or '[ERROR]')
   msg = msg or 'No message passed to log!'
@@ -21,13 +20,9 @@ local function log(msg, tag)
   logFile.close()
   print(msg)
 end
-
 log("http: "..tostring(http and true or false), http and '[OKAY]' or '[ERROR]')
 assert(http, "You'll need http enabled to install CLua.")
-
---get user input
 local install_directory
-
 local msg = "Where would you like to install CLua?"
 while true do
   print(msg)
@@ -47,8 +42,6 @@ if install_directory:byte(-1) ~= 47 then
   install_directory = install_directory..'/'
 end
 local install_message = "-- FILE MODIFIED BY CLUA-INSTALL"
-
---load startup to table
 log('Creating startup if not exist...')
 local tSrc = {}
 local inFile
@@ -85,8 +78,6 @@ while true do
   tSrc[#tSrc+1] = line
 end
 inFile.close()
-
---inject CLua globals (done in reverse order b/c it'd be harder to do it the other way)
 log('Injecting CLua globals into source table...')
 table.insert(tSrc, 1, "-- END CLUA GLOBALS")
 table.insert(tSrc, 1, "shell.setAlias('clua', CLUA)")
@@ -96,45 +87,40 @@ table.insert(tSrc, 1, "CLUA_LOG = CLUA_HOME..'/clua.log'")
 --table.insert(tSrc, 1, "CLUA_LIB = CLUA_HOME..'/lib'")
 table.insert(tSrc, 1, "CLUA = CLUA_HOME..'/clua.lua'")
 table.insert(tSrc, 1, "CLUA_HOME = '"..install_directory.."'")
+table.insert(tSrc, 1, "CLUA_VERSION = 1.0.0")
 table.insert(tSrc, 1, "-- CLua Copyright 2014 Skwerlman")
 table.insert(tSrc, 1, install_message)
 table.insert(tSrc, 1, "-- BEGIN CLUA GLOBALS")
-
---write parsed source table to output file
 log('Constructing startup from source table...')
 local outFile = fs.open('/startup', 'w')
 for _,line in ipairs(tSrc) do
   outFile.writeLine(line)
 end
 outFile.close()
-
---download and install files
 log('Beginning downloader...')
 log('isDebug:'..tostring(isDebug), '[DEBUG]')
---[[
-
-  I know this downloader is overkill for one file, but I plan to have standard libraries that get downloaded as well.
-  With this, I can add them very easily.
-
-]]
 local tFiles = {
-    'clua.lua'
+    'clua.lua',
+    'LICENSE'
   }
 local repo = 'https://raw.github.com/skwerlman/Clua/master/'
 if isDebug then -- use dev repo instead
   repo = 'https://raw.github.com/skwerlman/Clua/dev/'
 end
-
 for i = 1, #tFiles do
   local sFile = tFiles[i]
   local sResponse
-  log('Downloading '..sFile..' from '..repo..'...')
+  --log('Downloading '..sFile..' from '..repo..'...')
   local response = http.get(repo..sFile, {['User-Agent'] = 'CLua-install Autodownloader'})
-  if response and response.getResponseCode() == 200 then
-    sResponse = response.readAll()
+  if response then
+    if response.getResponseCode() == 200 then
+      sResponse = response.readAll()
+    else
+      success = false
+      failReasons[#failReasons+1] = "Unexpected response code "..response.getResponseCode()
+    end
     response.close()
   end
-
   if sResponse and sResponse ~= '' then
     local handle = fs.open(install_directory..sFile, 'w')
     handle.write(sResponse, 'w')
@@ -142,11 +128,11 @@ for i = 1, #tFiles do
     log(repo..sFile..' ===> '..install_directory..sFile, '[OKAY]')
   else
     log(repo..sFile..' =X=> '..install_directory..sFile, '[ERROR]')
+    sleep(.3)
     success = false
     failReasons[#failReasons+1] = "Couldn't download "..repo..sFile
   end
 end
-
 if success then
   log('Install completed successfully')
 else
@@ -155,5 +141,8 @@ else
   for _,v in ipairs(failReasons) do
     log(v, '[ERROR]')
   end
-  print('See clua-install.log for info')
+  print('See clua-install.log for more info')
 end
+print('Rebooting to apply environment settings...')
+sleep(3)
+os.reboot()
