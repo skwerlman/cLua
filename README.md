@@ -11,7 +11,7 @@ I felt inspired after seeing http://www.computercraft.info/forums2/index.php?/to
 
 ###How do I use it?
 It works just like the preprocessor in C++. It scans for preprocessor directives (PPDs), and performs commands based on them. The current PPDs are:
-* #INCLUDE _file_ FROM _dir_: Copies th contents of the specified file to that point in the file.
+* #INCLUDE _file_ FROM _dir_: Copies the contents of the specified file to that point in the file.
 * #DEFINE _flag_: Sets _flag_ at a given point. The CLua keeps track of these flags to prevent infinite loops, so I reccommend you use them in each file.
 * #IFDEF _flag_ ... #ENDIFDEF: Only copies the code between #IFDEF and ENDIFDEF if _flag_ has been set.
 * #IFNDEF _flag_ ... #ENDIFNDEF: Only copies the code between #IFNDEF and #ENDIFNDEF if _flag_ has **not** been set.
@@ -19,7 +19,7 @@ It works just like the preprocessor in C++. It scans for preprocessor directives
 ###How do I install it?
 Download CLua-install.lua onto the CC computer where you'd like to use CLua, and then run it.
 
-Alternitively, you can type ```pastebin get  CLua-install.lua``` and then ```CLua-install.lua``` to install it.
+Alternitively, you can type ```pastebin get zPMasvZ2 CLua-install.lua``` and then ```CLua-install.lua``` to install it.
 
 The installer will ask you where you'd like it installed; I reccommend using ```/clua```, but it's really a matter of preference.
 
