@@ -1,3 +1,12 @@
+local tArg = { ... }
+
+local inFileName = tArg[1]
+local outFileName = tArg[2] -- We wait to open this so we don't lock the file on crash/terminate
+local doLog = tArg[3] and true or false -- clean up tArg[3] so it's always boolean
+
+if not (tArg[1] and tArg[2]) then
+  return print('Usage: clua <input> <output>\nAdd any third argument to enable logging.')
+end
 
 if fs.exists(CLUA_LOG) then
   if fs.exists(CLUA_LOG..'.old') then
@@ -5,12 +14,6 @@ if fs.exists(CLUA_LOG) then
   end
   fs.move(CLUA_LOG, CLUA_LOG..'.old')
 end
-
-local tArg = { ... }
-
-local inFileName = tArg[1]
-local outFileName = tArg[2] -- We wait to open this so we don't lock the file on crash/terminate
-local doLog = tArg[3] and true or false -- clean up tArg[3] so it's always boolean
 
 local function log(msg, tag, silent)
   if doLog then
