@@ -50,11 +50,13 @@ end
 local function concat(t1, t2)
   for i=1,#t2 do
     t1[#t1+1] = t2[i]
-    os.queueEvent('null')
+    os.queueEvent('null') -- avoid crashes in massive files
     os.pullEvent()
   end
   return t1
 end
+
+local DEFINE = {}
 
 local function parseFile(path) 
   log('Begin parsing '..path..'...')
@@ -75,7 +77,22 @@ local function parseFile(path)
         local fo = parseFile(fs.combine(pt, fn))
         fileOut = concat(fileOut, fo)
       elseif line:sub(1, 8) == '#DEFINE ' then
-        --
+        local name = line:sub(9)
+        if DEFINE[name] then
+          log('Duplicate #DEFINE detected', '[WARNING]')
+          if DEFINE[name][1] == path then
+            if DEFINE[name][2] == lineNum then
+              assert(false, 'Infite loop detected!')
+            else
+              log('Duplicate #DEFINEs in '..path..' at lines '..DEFINE[name][2]..' and '..lineNum, '[WARNING]')
+            end
+          else
+            log('Duplicate #DEFINEs in '..DEFINE[name][1]..' at line '..DEFINE[name][2]..' and in '..path..' at line '..lineNum, '[WARNING]')
+          end
+        else
+          DEFINE[name] = {path, lineNum}
+          log('Defined "'..name..'"')
+        end
       elseif line:sub(1, 8) == '#IFNDEF ' then
         --
       elseif line:sub(1, 10) == '#ENDIFNDEF' then
