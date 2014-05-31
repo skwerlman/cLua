@@ -3,6 +3,9 @@ local isDebug = true
 
 local logName = '/clua-install.log'
 
+local success = true
+local failReasons = {}
+
 if fs.exists(logName) then
   if fs.exists(logName..'.old') then
     fs.delete(logName..'.old')
@@ -19,7 +22,7 @@ local function log(msg, tag)
   print(msg)
 end
 
-log("http:"..tostring(http and true or false), http and '[OKAY]' or '[ERROR]')
+log("http: "..tostring(http and true or false), http and '[OKAY]' or '[ERROR]')
 assert(http, "You'll need http enabled to install CLua.")
 
 --get user input
@@ -43,7 +46,9 @@ while true do
     msg = "Please enter the location where you'd like CLua to be installed:"
   end
 end
-
+if install_directory:byte(-1) ~= 47 then
+  install_directory = install_directory..'/'
+end
 local install_message = "-- FILE MODIFIED BY CLUA-INSTALL"
 
 --load startup to table
@@ -101,8 +106,7 @@ log('isDebug:'..tostring(isDebug), '[DEBUG]')
 ]]
 
 local tFiles = {
-    'clua.lua',
-    'null'
+    'clua.lua'
   }
 local repo = 'https://raw.github.com/skwerlman/Clua/master/'
 if isDebug then -- use dev repo instead
@@ -116,17 +120,28 @@ for i = 1, #tFiles do
   local response = http.get(repo..sFile, {['User-Agent'] = 'CLua-install Autodownloader'})
   if response and response.getResponseCode() == 200 then
     sResponse = response.readAll()
+    response.close()
   end
 
   if sResponse and sResponse ~= '' then
     local handle = fs.open(install_directory..sFile, 'w')
     handle.write(sResponse, 'w')
     handle.close()
-    log(repo..sFile..' ===> '..install_directory..sFile, '[OKAY]['..response.getResponseCode()..']['..i..'/'..#tFiles..']')
+    log(repo..sFile..' ===> '..install_directory..sFile, '[OKAY]')
   else
-    log(repo..sFile..' =X=> '..install_directory..sFile, '[ERROR]['..response.getResponseCode()..']['..i..'/'..#tFiles..']')
+    log(repo..sFile..' =X=> '..install_directory..sFile, '[ERROR]')
+    success = false
+    failReasons[#failReasons+1] = "Couldn't download "..repo..sFile
   end
-  response.close()
 end
 
-log('Install completed successfully')
+if success then
+  log('Install completed successfully')
+else
+  log('Install failed.', '[ERROR]')
+  log('Reason(s):', '[ERROR]')
+  for _,v in ipairs(failReasons) do
+    log(v, '[ERROR]')
+  end
+  print('See clua-install.log for info')
+end
