@@ -1,5 +1,5 @@
 
-local isDebug = true
+local isDebug = false
 
 local logName = '/clua-install.log'
 
