@@ -26,10 +26,7 @@ log("http: "..tostring(http and true or false), http and '[OKAY]' or '[ERROR]')
 assert(http, "You'll need http enabled to install CLua.")
 
 --get user input
-
---vars to get
 local install_directory
-
 
 local msg = "Where would you like to install CLua?"
 while true do
@@ -70,6 +67,21 @@ log('Building source table from startup...')
 while true do
   local line = inFile.readLine()
   if not line then break end
+  if line == '-- BEGIN CLUA GLOBALS' then -- ignore old globals
+    while true do
+      line = inFile.readLine()
+      if not line then
+        printError('ERROR: Found broken CLUA globals which')
+        printError('ERROR:   will require manual cleaning.')
+        printError('ERROR: Aborting install.')
+        return
+      end
+      if line == "-- END CLUA GLOBALS" then
+        line = inFile.readLine()
+        break
+      end
+    end
+  end
   tSrc[#tSrc+1] = line
 end
 inFile.close()
@@ -77,15 +89,16 @@ inFile.close()
 --inject CLua globals (done in reverse order b/c it'd be harder to do it the other way)
 log('Injecting CLua globals into source table...')
 table.insert(tSrc, 1, "-- END CLUA GLOBALS")
-table.insert(tSrc, 1, "CLUA_LUAMAN = "..tostring(man and true or false))
+table.insert(tSrc, 1, "shell.setAlias('clua', CLUA)")
+table.insert(tSrc, 1, "CLUA_LUAMAN = "..tostring(man and true or false)) -- For LuaMan integration
 table.insert(tSrc, 1, "CLUA_LOG = CLUA_HOME..'/clua.log'")
-table.insert(tSrc, 1, "CLUA_LIB_LIST = {}")
-table.insert(tSrc, 1, "CLUA_LIB = CLUA_HOME..'/lib'")
+--table.insert(tSrc, 1, "CLUA_LIB_LIST = {}")
+--table.insert(tSrc, 1, "CLUA_LIB = CLUA_HOME..'/lib'")
 table.insert(tSrc, 1, "CLUA = CLUA_HOME..'/clua.lua'")
 table.insert(tSrc, 1, "CLUA_HOME = '"..install_directory.."'")
-table.insert(tSrc, 1, "-- BEGIN CLUA GLOBALS")
 table.insert(tSrc, 1, "-- CLua Copyright 2014 Skwerlman")
 table.insert(tSrc, 1, install_message)
+table.insert(tSrc, 1, "-- BEGIN CLUA GLOBALS")
 
 --write parsed source table to output file
 log('Constructing startup from source table...')
@@ -104,7 +117,6 @@ log('isDebug:'..tostring(isDebug), '[DEBUG]')
   With this, I can add them very easily.
 
 ]]
-
 local tFiles = {
     'clua.lua'
   }
