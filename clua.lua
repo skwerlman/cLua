@@ -89,7 +89,7 @@ local function parseFile(path)
             if DEFINE[name][1] == path then
               if DEFINE[name][2] == lineNum then
                 if DEFINE[name] == WARNLOOP[name] then
-                  assert(false, 'Infite loop detected!')
+                  assert(false, 'Infinite loop detected!')
                 else
                   log('Potential infinite loop detected!', '[WARNING]')
                   log('Setting warning flag', '[WARNING]')
