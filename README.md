@@ -1,7 +1,7 @@
 Clua
 ====
 
-Conditional Lua Combiner!
+Conditional Lua Compiler!
 
 ###What does it do?
 Clua allows you to create modular CC Programs and release them as a single file.
