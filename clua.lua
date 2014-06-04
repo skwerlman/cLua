@@ -68,8 +68,13 @@ local function parseFile(path)
   local function parseLines(file, path)
     local fileOut = {}
     for lineNum, line in ipairs(file) do
-      if line:byte(1) == 35 then
-        log('Attempting to handle "'..line..'"', '[DEBUG]')
+      if line:byte(1) == 35 then -- don't indent directives
+        log('Attempting to handle "'..line..'" on line '..lineNum, '[DEBUG]')
+
+        while true do
+          if line:byte(-1) ~= 32 and line:byte(-1) ~= 9 then break end
+          line = line:sub(1,-2)
+        end
 
         if line:sub(1, 9) == '#INCLUDE ' then
           --line = line:gsub('~', CLUA_LIB)
@@ -108,19 +113,24 @@ local function parseFile(path)
           end
 
         elseif line:sub(1, 7) == '#IFDEF ' then
+          --log('#IFDEF', '[DEBUG]')
           local name = line:sub(8)
           local ft = {}
           while true do
             local tl = file[lineNum]
+            --log('removing '..tl, '[DEBUG]')
             table.remove(file, lineNum)
-            if string.sub(tl, 1, 9) == '#ENDIFDEF' then break end
+            if tl == '#ENDIFDEF' then table.insert(file, 1, '') break end
             ft[#ft+1] = tl
+            --log('Table ft:\n'..textutils.serialize(ft), '[DEBUG]')
+            --log('Table file:\n'..textutils.serialize(ft), '[DEBUG]')
             if lineNum == #file then
               assert(false, 'No matching #ENDIFDEF found for #IFDEF on line '..lineNum..' in '..path) 
             end
           end
           if DEFINE[name] then
             log('Definition found for '..name, '[DEBUG]')
+            --log('!!removing '..ft[1], '[DEBUG]')
             table.remove(ft, 1)
             local fo = parseLines(ft, path)
             fileOut = concat(fileOut, fo)
@@ -128,23 +138,28 @@ local function parseFile(path)
             log('No definition found for '..name, '[DEBUG]')
           end
 
-        elseif line:sub(1, 9) == '#ENDIFDEF' then
+        elseif line == '#ENDIFDEF' then
           assert(false, 'Orphaned #ENDIFDEF on line '..lineNum..' in '..path) -- always error since #ENDIFDEFs should be absorbed by #IFDEF
 
         elseif line:sub(1, 8) == '#IFNDEF ' then
+          --log('#IFNDEF', '[DEBUG]')
           local name = line:sub(9)
           local ft = {}
           while true do
             local tl = file[lineNum]
+            --log('removing '..tl, '[DEBUG]')
             table.remove(file, lineNum)
-            if string.sub(tl, 1, 10) == '#ENDIFNDEF' then break end
+            if tl == '#ENDIFNDEF' then table.insert(file, 1, '') break end
             ft[#ft+1] = tl
+            --log('Table ft:\n'..textutils.serialize(ft), '[DEBUG]')
+            --log('Table file:\n'..textutils.serialize(ft), '[DEBUG]')
             if lineNum == #file then
               assert(false, 'No matching #ENDIFNDEF found for #IFNDEF on line '..lineNum..' in '..path) 
             end
           end
           if not DEFINE[name] then
             log('No definition found for '..name, '[DEBUG]')
+            --log('!!removing '..ft[1], '[DEBUG]')
             table.remove(ft, 1)
             local fo = parseLines(ft, path)
             fileOut = concat(fileOut, fo)
@@ -152,13 +167,35 @@ local function parseFile(path)
             log('Definition found for '..name, '[DEBUG]')
           end
 
-        elseif line:sub(1, 10) == '#ENDIFNDEF' then
+        elseif line == '#ENDIFNDEF' then
           assert(false, 'Orphaned #ENDIFNDEF on line '..lineNum..' in '..path) -- always error since #ENDIFNDEFs should be absorbed by #IFNDEF
 
-        else
-          assert(false, 'Invalid preprocessor directive on line '..lineNum..' in '..path)
+        elseif line:sub(1, 5) == '#ELSE' then -- else (relies on pre)
+          --
+
+        elseif line:sub(1, 8) == '#ELSEIF ' then -- else if flag
+          --
+
+        elseif line:sub(1, 9) == '#ELSEIFN ' then -- else if not flag
+          --
+
+        elseif line == '#SNIPPET' then -- ignore all directives until the end of the file
+          log('Handling '..path..' as a snippet...', '[DEBUG]')
+          while true do
+            local tl = file[lineNum]
+            if not tl then break end
+            if tl:byte(1) ~= 35 then -- if line doesn't start with #, put it in the output table
+              fileOut[#fileOut+1] = tl
+            else -- directives should never be in snippets, so this is logged as a warning 
+              log('Ignoring directive in snippet: '..tl, '[WARNING]')
+            end
+            table.remove(file, lineNum)
+          end
+
+        else -- line starts with #, but isn't a directive
+          assert(false, 'Invalid preprocessor directive on line '..lineNum..' in '..path..': '..line)
         end
-      else
+      else -- not a directive, so we put it in the output table
         fileOut[#fileOut+1] = line
       end
     end
@@ -171,34 +208,19 @@ local function parseFile(path)
 end
 
 local tSrc = parseFile(inFileName)
+local trimCount = 0
 
 --write parsed source table to output file
 log('Writing source table to '..outFileName..'...')
 local outFile = fs.open(outFileName, 'w')
-for _,line in ipairs(tSrc) do
-  outFile.writeLine(line)
-end
-outFile.close()
-
-local trimCount = 0
-
-log('Removing blank lines from '..outFileName..'...')
-local file = fileToTable(outFileName)
-local fileOut = {}
-for lineNum, line in ipairs(file) do
+for ln,line in ipairs(tSrc) do
   if line ~= '' then
-    fileOut[#fileOut+1] = line
+    outFile.writeLine(line)
   else
+    log('Ignoring line '..ln..' beacause it\'s empty', '[DEBUG]')
     trimCount = trimCount+1
   end
 end
-log('Writing source table to '..outFileName..'...')
-local outFile = fs.open(outFileName, 'w')
-for _,line in ipairs(fileOut) do
-  outFile.writeLine(line)
-end
 outFile.close()
-
 log('Trimmed '..trimCount..' lines from '..outFileName, '[DEBUG]')
-
 log('Compilation complete', '[DONE]')
