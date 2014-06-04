@@ -41,6 +41,7 @@ end
 if install_directory:byte(-1) ~= 47 then
   install_directory = install_directory..'/'
 end
+fs.makeDir(fs.combine(install_directory, '/lib'))
 local install_message = "-- FILE MODIFIED BY CLUA-INSTALL"
 log('Creating startup if not exist...')
 local tSrc = {}
@@ -82,12 +83,12 @@ log('Injecting CLua globals into source table...')
 table.insert(tSrc, 1, "-- END CLUA GLOBALS")
 table.insert(tSrc, 1, "shell.setAlias('clua', CLUA)")
 table.insert(tSrc, 1, "CLUA_LUAMAN = "..tostring(man and true or false)) -- For LuaMan integration
-table.insert(tSrc, 1, "CLUA_LOG = CLUA_HOME..'/clua.log'")
---table.insert(tSrc, 1, "CLUA_LIB_LIST = {}")
---table.insert(tSrc, 1, "CLUA_LIB = CLUA_HOME..'/lib'")
-table.insert(tSrc, 1, "CLUA = CLUA_HOME..'/clua.lua'")
+table.insert(tSrc, 1, "CLUA_LOG = CLUA_HOME..'clua.log'")
+table.insert(tSrc, 1, "CLUA_LIB_LIST = {}")
+table.insert(tSrc, 1, "CLUA_LIB = CLUA_HOME..'lib'")
+table.insert(tSrc, 1, "CLUA = CLUA_HOME..'clua.lua'")
 table.insert(tSrc, 1, "CLUA_HOME = '"..install_directory.."'")
-table.insert(tSrc, 1, "CLUA_VERSION = '1.0.0'")
+table.insert(tSrc, 1, "CLUA_VERSION = '1.1.0'")
 table.insert(tSrc, 1, "-- CLua Copyright 2014 Skwerlman")
 table.insert(tSrc, 1, install_message)
 table.insert(tSrc, 1, "-- BEGIN CLUA GLOBALS")
