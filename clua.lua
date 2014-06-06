@@ -181,6 +181,7 @@ local function parseFile(path)
 
         elseif line == '#SNIPPET' then -- ignore all directives until the end of the file
           log('Handling '..path..' as a snippet...', '[DEBUG]')
+          table.remove(file, lineNum) -- remove #SNIPPET directive so we don't warn about 'ignoring' it
           while true do
             local tl = file[lineNum]
             if not tl then break end
@@ -217,7 +218,7 @@ for ln,line in ipairs(tSrc) do
   if line ~= '' then
     outFile.writeLine(line)
   else
-    log('Ignoring line '..ln..' beacause it\'s empty', '[DEBUG]')
+    log('Ignoring line '..ln..' because it\'s empty', '[DEBUG]')
     trimCount = trimCount+1
   end
 end
