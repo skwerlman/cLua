@@ -5,14 +5,16 @@ local outFileName = tArg[2] -- We wait to open this so we don't lock the file on
 local doLog = tArg[3] and true or false -- clean up tArg[3] so it's always boolean
 
 if not (tArg[1] and tArg[2]) then
-  return print('CLua '..CLUA_VERSION..' Copyright 2014 Skwerlman\nUsage: clua <input> <output>\nAdd any third argument to enable logging.')
+  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output>\nAdd any third argument to enable logging.')
 end
 
-if fs.exists(CLUA_LOG) then
-  if fs.exists(CLUA_LOG..'.old') then
-    fs.delete(CLUA_LOG..'.old')
+if doLog then
+  if fs.exists(CLUA_LOG) then
+    if fs.exists(CLUA_LOG..'.old') then
+      fs.delete(CLUA_LOG..'.old')
+    end
+    fs.move(CLUA_LOG, CLUA_LOG..'.old')
   end
-  fs.move(CLUA_LOG, CLUA_LOG..'.old')
 end
 
 local function log(msg, tag, silent)
@@ -37,7 +39,7 @@ local function assert(bool, msg)
   end
 end
 
-log('Enable logging: '..tostring(doLog), '[DEBUG]', true)
+log('Enable logging: '..tostring(doLog), '[OKAY]')
 
 local function fileToTable(path)
   log('Building source table from '..path..'...', '[DEBUG]', true)
@@ -70,7 +72,7 @@ local function parseFile(path)
     local fileOut = {}
     for curLine, line in ipairs(file) do
       LINENUM = LINENUM + 1
-      --log(LINENUM..': '..line, '[DEBUG]', true)
+      --log(LINENUM..': '..line, '[BUGFIXING]', true)
       if line:byte(1) == 35 then -- don't indent directives
         log('Attempting to handle "'..line..'" on line '..LINENUM, '[DEBUG]', true)
 
@@ -80,7 +82,7 @@ local function parseFile(path)
         end
 
         if line:sub(1, 9) == '#INCLUDE ' then
-          log('#INCLUDE', '[DEBUG]', true)
+          --log('#INCLUDE', '[BUGFIXING]', true)
           line = line:gsub('~', CLUA_LIB)
           local i = line:find(' FROM ')
           assert(i, '#INCLUDE had no matching FROM at line '..LINENUM..' in '..path)
@@ -94,7 +96,7 @@ local function parseFile(path)
           --LINENUM = LINENUM + 1
 
         elseif line:sub(1, 8) == '#DEFINE ' then
-          log('#DEFINE', '[DEBUG]', true)
+          --log('#DEFINE', '[BUGFIXING]', true)
           local name = line:sub(9)
           if DEFINE[name] then
             if DEFINE[name][1] == path then
@@ -119,7 +121,7 @@ local function parseFile(path)
           end
 
         elseif line == '#SNIPPET' then -- ignore all directives until the end of the file
-          log('#SNIPPET', '[DEBUG]', true)
+          --log('#SNIPPET', '[BUGFIXING]', true)
           log('Handling '..path..' as a snippet...', '[OKAY]')
           table.remove(file, curLine) -- remove #SNIPPET directive so we don't warn about 'ignoring' it
           while true do
@@ -134,24 +136,24 @@ local function parseFile(path)
           end
 
         elseif line:sub(1, 7) == '#IFDEF ' then
-          log('#IFDEF', '[DEBUG]', true)
+          --log('#IFDEF', '[BUGFIXING]', true)
           local name = line:sub(8)
           local ft = {}
           while true do
             local tl = file[curLine]
-            --log('removing '..tl, '[DEBUG]', true)
+            --log('removing '..tl, '[BUGFIXING]', true)
             table.remove(file, curLine)
             if tl == '#ENDIFDEF' then table.insert(file, 1, '') LINENUM = LINENUM + 1 break end
             ft[#ft+1] = tl
-            --log('Table ft:\n'..textutils.serialize(ft), '[DEBUG]', true)
-            --log('Table file:\n'..textutils.serialize(ft), '[DEBUG]', true)
+            --log('Table ft:\n'..textutils.serialize(ft), '[BUGFIXING]', true)
+            --log('Table file:\n'..textutils.serialize(ft), '[BUGFIXING]', true)
             if curLine == #file then
               assert(false, 'No matching #ENDIFDEF found for #IFDEF on line '..LINENUM..' in '..path) 
             end
           end
           if DEFINE[name] then
             log('Definition found for '..name, '[DEBUG]', true)
-            --log('!!removing '..ft[1], '[DEBUG]', true)
+            --log('!!removing '..ft[1], '[BUGFIXING]', true)
             table.remove(ft, 1)
             local fo = parseLines(ft, path)
             fileOut = concat(fileOut, fo)
@@ -161,24 +163,24 @@ local function parseFile(path)
           end
 
         elseif line:sub(1, 8) == '#IFNDEF ' then
-          log('#IFNDEF', '[DEBUG]', true)
+          --log('#IFNDEF', '[BUGFIXING]', true)
           local name = line:sub(9)
           local ft = {}
           while true do
             local tl = file[curLine]
-            --log('removing '..tl, '[DEBUG]', true)
+            --log('removing '..tl, '[BUGFIXING]', true)
             table.remove(file, curLine)
             if tl == '#ENDIFNDEF' then table.insert(file, 1, '') LINENUM = LINENUM + 1 break end
             ft[#ft+1] = tl
-            --log('Table ft:\n'..textutils.serialize(ft), '[DEBUG]', true)
-            --log('Table file:\n'..textutils.serialize(ft), '[DEBUG]', true)
+            --log('Table ft:\n'..textutils.serialize(ft), '[BUGFIXING]', true)
+            --log('Table file:\n'..textutils.serialize(ft), '[BUGFIXING]', true)
             if curLine == #file then
               assert(false, 'No matching #ENDIFNDEF found for #IFNDEF on line '..LINENUM..' in '..path) 
             end
           end
           if not DEFINE[name] then
             log('No definition found for '..name, '[DEBUG]', true)
-            --log('!!removing '..ft[1], '[DEBUG]', true)
+            --log('!!removing '..ft[1], '[BUGFIXING]', true)
             table.remove(ft, 1)
             local fo = parseLines(ft, path)
             fileOut = concat(fileOut, fo)
