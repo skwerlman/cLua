@@ -1,12 +1,38 @@
+local st = os.time()
+
 local tArg = { ... }
 
-local inFileName = tArg[1]
-local outFileName = tArg[2] -- We wait to open this so we don't lock the file on crash/terminate
-local doLog = tArg[3] and true or false -- clean up tArg[3] so it's always boolean
-
-if not (tArg[1] and tArg[2]) then
-  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output>\nAdd any third argument to enable logging.')
+if #tArg < 2 then
+  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output> [--log][--exec:<code> ...][--define:<flag> ...]\n\n  --log - Enables logging\n  --exec:<code> - Executes arbitraty code before compilation. Use ++ instead of spaces.\n  --define:<flag> - Equivelent to #DEFINE')
 end
+
+local inFileName = tArg[1]
+local outFileName = tArg[2]
+table.remove(tArg, 1)
+table.remove(tArg, 1)
+
+local DEFINE = {}
+local WARNLOOP = {}
+local doLog = false
+
+--handle args
+for k,v in ipairs(tArg) do
+  --Undocumented; pending safety tests
+  if v:sub(3,6) == 'exec' then
+    loadstring(v:sub(8):gsub('++', ' ')..' return true')()
+
+  elseif v:sub(3) == 'log' then
+    doLog = true
+
+  elseif v:sub(3,8) == 'define' then
+    DEFINE[v:sub(10)] = {'cmd', k}
+  
+  else
+    error('Bad argument: '..v,0)
+  end
+end
+
+doLog = doLog and true or false
 
 if doLog then
   if fs.exists(CLUA_LOG) then
@@ -63,9 +89,6 @@ local function concat(t1, t2) -- concatenates two source tables
   return t1
 end
 
-local DEFINE = {}
-local WARNLOOP = {}
-
 local function parseFile(path)
   local LINENUM = 0
   local function parseLines(file, path)
@@ -73,7 +96,7 @@ local function parseFile(path)
     for curLine, line in ipairs(file) do
       LINENUM = LINENUM + 1
       --log(LINENUM..': '..line, '[BUGFIXING]', true)
-      if line:byte(1) == 35 then -- don't indent directives
+      if line:byte(1) == 35 then -- don't ever indent directives, unless you like syntax errors
         log('Attempting to handle "'..line..'" on line '..LINENUM, '[DEBUG]', true)
 
         while true do
@@ -236,3 +259,5 @@ end
 outFile.close()
 log('Trimmed '..trimCount..' lines from '..outFileName, '[DEBUG]', true)
 log('Compilation complete', '[DONE]')
+local et = os.time()
+log('Time: '..(et-st), '[DONE]')
