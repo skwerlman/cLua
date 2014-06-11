@@ -3,7 +3,7 @@ local st = os.time()
 local tArg = { ... }
 
 if #tArg < 2 then
-  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output>\nAdd any third argument to enable logging.')
+  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output> [--log][--exec:<code> ...][--define:<flag> ...]\n\n  --log - Enables logging\n  --exec:<code> - Executes arbitraty code before compilation. Use ++ instead of spaces.\n  --define:<flag> - Equivelent to #DEFINE')
 end
 
 local inFileName = tArg[1]

@@ -1,7 +1,4 @@
---[[
-  I know this downloader is overkill for two files, but I plan to have standard libraries that get downloaded as well.
-  With this, I can add them very easily.
-]]
+local version = '1.2.0'
 local isDebug = false -- set to true to if you like to live on the edge!
 local logName = '/clua-install.log'
 local success = true
@@ -88,7 +85,7 @@ table.insert(tSrc, 1, "CLUA_LIB_LIST = {}")
 table.insert(tSrc, 1, "CLUA_LIB = CLUA_HOME..'lib'")
 table.insert(tSrc, 1, "CLUA = CLUA_HOME..'clua.lua'")
 table.insert(tSrc, 1, "CLUA_HOME = '"..install_directory.."'")
-table.insert(tSrc, 1, "CLUA_VERSION = '1.1.1'")
+table.insert(tSrc, 1, "CLUA_VERSION = '"..version.."'")
 table.insert(tSrc, 1, "-- CLua Copyright 2014 Skwerlman")
 table.insert(tSrc, 1, install_message)
 table.insert(tSrc, 1, "-- BEGIN CLUA GLOBALS")
@@ -102,7 +99,9 @@ log('Beginning downloader...')
 log('isDebug:'..tostring(isDebug), '[DEBUG]')
 local tFiles = {
     'clua.lua',
-    'LICENSE'
+    'LICENSE',
+    'lib/CRC32',
+    'lib/LUABIT'
   }
 local repo = 'https://raw.github.com/skwerlman/Clua/master/'
 if isDebug then -- use dev repo instead
