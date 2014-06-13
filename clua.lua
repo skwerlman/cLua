@@ -1,15 +1,27 @@
+local st = os.time()
 local doLog = false
+local DEFINE = {}
+local WARNLOOP = {}
+local tArg = { ... }
+if #tArg < 2 then
+  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output> [--log][--exec:<code> ...][--define:<flag> ...]\n\n  --log - Enables logging\n  --exec:<code> - Executes arbitraty code before compilation. Use ++ instead of spaces.\n  --define:<flag> - Equivelent to #DEFINE')
+end
+local inFileName = tArg[1]
+local outFileName = tArg[2]
+table.remove(tArg, 1)
+table.remove(tArg, 1)
 
 local function log(msg, tag, silent)
-  if doLog then
-    tag = tag or (msg and '[OKAY]' or '[WARNING]')
-    msg = msg or 'No message passed to log!'
-    local logFile = fs.open(CLUA_LOG, 'a')
-    logFile.writeLine('['..os.time()..']'..tag..' '..msg)
-    logFile.close()
-  end
+  tag = tag or (msg and '[OKAY]' or '[WARNING]')
+  msg = msg or 'No message passed to log!'
   if not silent then
     print(msg)
+  end
+  if doLog then
+    local logFile = fs.open(CLUA_LOG, 'a')
+    msg = '['..os.time()..']'..tag..' '..msg:gsub('\n', '\n['..os.time()..']'..tag..' ')
+    logFile.writeLine(msg)
+    logFile.close()
   end
 end
 
@@ -114,15 +126,18 @@ local function parseFile(path)
           end
 
         elseif line:sub(1,6) == '#EXEC ' then
-          log('#EXEC', '[DEVEL]', true)
-          local ret, data = pcall(loadstring(line:sub(7)..' return true')) -- append return true so if they do something without a return value, we don't break
-          local em = 'EXEC directive at line '..LINENUM..' in '..path..'returned an error.'
-          assert(ret, type(data) == 'string' and em..'\n> '..data or em..'\n> No error message available')
+          --log(line, '[DEVEL]', true)
+          local errmsg = 'EXEC directive at line '..LINENUM..' in '..path..' threw an error.'
+          local ret, data = loadstring(line:sub(7)..' return true') -- append return true so if they do something without a return value, we don't break
+          assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
+          ret, data = pcall(ret)
+          assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
 
         elseif line:sub(1,7) == '#IFVAR ' then
-          log('#IFVAR', '[DEVEL]', true)
+          --log('#IFVAR', '[DEVEL]', true)
           local name = line:sub(8)
           local ft = {}
+          local ol = LINENUM
           while true do
             local tl = file[curLine]
             --log('removing '..tl, '[DEVEL]', true)
@@ -135,21 +150,29 @@ local function parseFile(path)
               assert(false, 'No matching #ENDIFVAR found for #IFVAR on line '..LINENUM..' in '..path) 
             end
           end
-          if loadstring('return '..name) then
+          local errmsg = 'IFVAR directive at line '..ol..' in '..path..' threw an error.'
+          local ret, data = loadstring('return '..name)
+          assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
+          ret, data = pcall(ret)
+          assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
+          if val then
+            --log(name..'=='..tostring(val), '[DEVEL]', true)
             log('Definition found for '..name, '[DEBUG]', true)
             --log('!!removing '..ft[1], '[DEVEL]', true)
             table.remove(ft, 1)
             local fo = parseLines(ft, path)
             fileOut = concat(fileOut, fo)
           else
+            --log(name..'=='..tostring(loadstring('return '..name)()), '[DEVEL]', true)
             log('No definition found for '..name, '[DEBUG]', true)
             LINENUM = LINENUM + #ft - 1
           end
 
         elseif line:sub(1,8) == '#IFNVAR ' then
-          log('#IFNVAR', '[DEVEL]', true)
+          --log('#IFNVAR', '[DEVEL]', true)
           local name = line:sub(8)
           local ft = {}
+          local ol = LINENUM
           while true do
             local tl = file[curLine]
             --log('removing '..tl, '[DEVEL]', true)
@@ -162,13 +185,20 @@ local function parseFile(path)
               assert(false, 'No matching #ENDIFNVAR found for #IFNVAR on line '..LINENUM..' in '..path) 
             end
           end
-          if loadstring('return '..name) then
+          local errmsg = 'IFNVAR directive at line '..ol..' in '..path..' threw an error.'
+          local ret, data = loadstring('return '..name)
+          assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
+          ret, data = pcall(ret)
+          assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
+          if not val then
+            --log(name..'=='..tostring(val), '[DEVEL]', true)
             log('Definition found for '..name, '[DEBUG]', true)
             --log('!!removing '..ft[1], '[DEVEL]', true)
             table.remove(ft, 1)
             local fo = parseLines(ft, path)
             fileOut = concat(fileOut, fo)
           else
+            --log(name..'=='..tostring(loadstring('return '..name)()), '[DEVEL]', true)
             log('No definition found for '..name, '[DEBUG]', true)
             LINENUM = LINENUM + #ft - 1
           end
@@ -263,53 +293,34 @@ local function parseFile(path)
   return fileOut
 end
 
-local st = os.time()
-
-local tArg = { ... }
-
-if #tArg < 2 then
-  return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman\nUsage: clua <input> <output> [--log][--exec:<code> ...][--define:<flag> ...]\n\n  --log - Enables logging\n  --exec:<code> - Executes arbitraty code before compilation. Use ++ instead of spaces.\n  --define:<flag> - Equivelent to #DEFINE')
-end
-
-local inFileName = tArg[1]
-local outFileName = tArg[2]
-table.remove(tArg, 1)
-table.remove(tArg, 1)
-
-local DEFINE = {}
-local WARNLOOP = {}
-
 --handle args
 for k,v in ipairs(tArg) do
   v = v:sub(3)
   if v:sub(1,4) == 'exec' then
-    local ret, data = pcall(loadstring(line:sub(7)..' return true')) -- append return true so if they do something without a return value, we don't break
-    local em = 'exec option (#'..k..') returned an error.'
-    assert(ret, type(data) == 'string' and em..'\n> '..data or em..'\n> No error message available')
+    local errmsg = 'Option exec (#'..k..') caused an error.'
+    local func, err = loadstring(v:sub(6)..' return true') -- append return true so if they do something without a return value, we don't break
+    assert(func, type(err) == 'string' and errmsg..'\n> '..err or errmsg..'\n> No error message available')
+    local ret, data = pcall(func)
+    assert(ret, type(data) == 'string' and errmsg..'\n> '..data or errmsg..'\n> No error message available')
 
   elseif v:sub(1) == 'log' then
     doLog = true
+    if fs.exists(CLUA_LOG) then
+      if fs.exists(CLUA_LOG..'.old') then
+        fs.delete(CLUA_LOG..'.old')
+      end
+      fs.move(CLUA_LOG, CLUA_LOG..'.old')
+    end
 
   elseif v:sub(1,6) == 'define' then
     DEFINE[v:sub(8)] = {'cmd', k}
   
   else
-    error('Bad argument #'..k..': '..v,0)
+    assert(false, 'Bad argument #'..k..': '..v)
   end
 end
 
-doLog = doLog and true or false
-
-if doLog then
-  if fs.exists(CLUA_LOG) then
-    if fs.exists(CLUA_LOG..'.old') then
-      fs.delete(CLUA_LOG..'.old')
-    end
-    fs.move(CLUA_LOG, CLUA_LOG..'.old')
-  end
-end
-
-log('Enable logging: '..tostring(doLog), '[OKAY]')
+log('Enable logging: '..tostring(doLog), '[DEBUG]')
 
 
 local tSrc = parseFile(inFileName)
