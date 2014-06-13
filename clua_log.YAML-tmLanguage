@@ -1,0 +1,23 @@
+fileTypes:
+- clua.log
+- clua.log.old
+- clua-install.log
+- clua-install.log.old
+name: CLua Log
+patterns:
+- match: \[[0-9\.]*\]
+  name: constant.numeric.clua_log
+- match: \[DONE\].*
+  name: string.clua_log
+- match: \[DEBUG\].*
+  name: constant.numberic.clua_log
+- match: \[(WARNING|DEVEL)\].*
+  name: support.function.text.clua_log
+- match: \[ERROR\].*
+  name: invalid.clua_log
+- match: \=\=\=\>
+  name: string.clua_log
+- match: \=X\=\>
+  name: invalid.clua_log
+scopeName: source.clua_log
+uuid: c7d0a59f-80e0-4f41-adee-877649329f18

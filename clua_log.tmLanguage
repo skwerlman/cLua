@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>fileTypes</key>
+	<array>
+		<string>clua.log</string>
+		<string>clua.log.old</string>
+		<string>clua-install.log</string>
+		<string>clua-install.log.old</string>
+	</array>
+	<key>name</key>
+	<string>CLua Log</string>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>match</key>
+			<string>\[[0-9\.]*\]</string>
+			<key>name</key>
+			<string>constant.numeric.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\[DONE\].*</string>
+			<key>name</key>
+			<string>string.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\[DEBUG\].*</string>
+			<key>name</key>
+			<string>constant.numberic.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\[(WARNING|DEVEL)\].*</string>
+			<key>name</key>
+			<string>support.function.text.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\[ERROR\].*</string>
+			<key>name</key>
+			<string>invalid.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\=\=\=\&gt;</string>
+			<key>name</key>
+			<string>string.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\=X\=\&gt;</string>
+			<key>name</key>
+			<string>invalid.clua_log</string>
+		</dict>
+	</array>
+	<key>scopeName</key>
+	<string>source.clua_log</string>
+	<key>uuid</key>
+	<string>c7d0a59f-80e0-4f41-adee-877649329f18</string>
+</dict>
+</plist>
