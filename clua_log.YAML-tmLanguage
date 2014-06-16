@@ -9,12 +9,16 @@ patterns:
   name: constant.numeric.clua_log
 - match: \[DONE\].*
   name: string.clua_log
-- match: \[DEBUG\].*
+- match: \[DEBUG\]
   name: constant.numberic.clua_log
-- match: \[(WARNING|DEVEL)\].*
-  name: support.function.text.clua_log
+- match: \[WARNING\].*
+  name: keyword.clua_log
+- match: \[DEVEL\].*
+  name: comment.line.clua_log
 - match: \[ERROR\].*
-  name: invalid.clua_log
+  name: invalid.illegal.clua_log
+- match: \[OKAY\]
+  name: string.clua_log
 - match: \=\=\=\>
   name: string.clua_log
 - match: \=X\=\>
