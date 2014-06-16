@@ -27,21 +27,33 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>\[DEBUG\].*</string>
+			<string>\[DEBUG\]</string>
 			<key>name</key>
 			<string>constant.numberic.clua_log</string>
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>\[(WARNING|DEVEL)\].*</string>
+			<string>\[WARNING\].*</string>
 			<key>name</key>
-			<string>support.function.text.clua_log</string>
+			<string>keyword.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\[DEVEL\].*</string>
+			<key>name</key>
+			<string>comment.line.clua_log</string>
 		</dict>
 		<dict>
 			<key>match</key>
 			<string>\[ERROR\].*</string>
 			<key>name</key>
-			<string>invalid.clua_log</string>
+			<string>invalid.illegal.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\[OKAY\]</string>
+			<key>name</key>
+			<string>string.clua_log</string>
 		</dict>
 		<dict>
 			<key>match</key>
