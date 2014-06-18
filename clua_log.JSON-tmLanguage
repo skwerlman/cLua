@@ -1,0 +1,69 @@
+{
+    "patterns": [
+        {
+            "name": "constant.numeric.clua_log", 
+            "match": "\\[[0-9\\.]*\\]"
+        }, 
+        {
+            "name": "string.clua_log", 
+            "match": "\\[DONE\\].*"
+        }, 
+        {
+            "name": "constant.numberic.clua_log", 
+            "match": "\\[DEBUG\\]"
+        }, 
+        {
+            "name": "keyword.clua_log", 
+            "match": "\\[WARNING\\].*"
+        }, 
+        {
+            "name": "comment.line.clua_log", 
+            "match": "\\[DEVEL\\]"
+        }, 
+        {
+            "name": "invalid.illegal.clua_log", 
+            "match": "\\[ERROR\\].*"
+        }, 
+        {
+            "name": "string.clua_log", 
+            "match": "\\[OKAY\\]"
+        }, 
+        {
+            "name": "string.clua_log", 
+            "match": "\\=\\=\\=\\>"
+        }, 
+        {
+            "name": "invalid.clua_log", 
+            "match": "\\=X\\=\\>"
+        }, 
+        {
+            "name": "constant.numeric.clua_log", 
+            "match": "\\ .*\\:[0-9]*\\:[ ]"
+        }, 
+        {
+            "name": "keyword.clua_log", 
+            "match": "\\!\\!.*"
+        }, 
+        {
+            "name": "constant.numeric.clua_log", 
+            "match": "\\#[A-Z][A-Z]*"
+        }, 
+        {
+            "name": "constant.numeric.clua_log", 
+            "match": "\\~"
+        }, 
+        {
+            "name": "constant.numeric.clua_log", 
+            "match": "FROM"
+        }
+    ], 
+    "scopeName": "source.clua_log", 
+    "fileTypes": [
+        "clua.log", 
+        "clua.log.old", 
+        "clua-install.log", 
+        "clua-install.log.old"
+    ], 
+    "uuid": "c7d0a59f-80e0-4f41-adee-877649329f18", 
+    "name": "CLua Log"
+}
