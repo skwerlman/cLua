@@ -108,7 +108,9 @@ local tFiles = {
     'clua.lua',
     'LICENSE',
     'lib/CRC32',
-    'lib/LUABIT'
+    'lib/LUABIT',
+    'lib/SPLASH',
+    'lib/JSON'
   }
 local repo = 'https://raw.github.com/skwerlman/Clua/master/'
 if isDebug then -- use dev repo instead
