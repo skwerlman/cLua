@@ -39,7 +39,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>\[DEVEL\].*</string>
+			<string>\[DEVEL\]</string>
 			<key>name</key>
 			<string>comment.line.clua_log</string>
 		</dict>
@@ -66,6 +66,36 @@
 			<string>\=X\=\&gt;</string>
 			<key>name</key>
 			<string>invalid.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\ .*\:[0-9]*\:[ ]</string>
+			<key>name</key>
+			<string>constant.numeric.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\!\!.*</string>
+			<key>name</key>
+			<string>keyword.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\#[A-Z][A-Z]*</string>
+			<key>name</key>
+			<string>constant.numeric.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\~</string>
+			<key>name</key>
+			<string>constant.numeric.clua_log</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>FROM</string>
+			<key>name</key>
+			<string>constant.numeric.clua_log</string>
 		</dict>
 	</array>
 	<key>scopeName</key>
