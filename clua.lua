@@ -428,8 +428,8 @@ for k,v in ipairs(tArg) do
       return print('CLua '..(CLUA_VERSION or 'MISSING_VERSION_INFO')..' Copyright 2014 Skwerlman')
 
     elseif v == 'self-update' then
-      shell.run('pastebin', 'get zPMasvZ2 '..CLUA_HOME..'clua-temp-updater')
-      return shell.run(CLUA_HOME..'clua-temp-updater') -- will remove itself post-install
+      shell.run('pastebin', 'get zPMasvZ2 '..CLUA_HOME..'temp-clua-updater')
+      return shell.run(CLUA_HOME..'temp-clua-updater') -- will remove itself post-install
 
     else
       assert(false, 'Bad argument #'..k..': '..v)
