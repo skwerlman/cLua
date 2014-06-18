@@ -13,7 +13,7 @@ patterns:
   name: constant.numberic.clua_log
 - match: \[WARNING\].*
   name: keyword.clua_log
-- match: \[DEVEL\].*
+- match: \[DEVEL\]
   name: comment.line.clua_log
 - match: \[ERROR\].*
   name: invalid.illegal.clua_log
@@ -23,5 +23,15 @@ patterns:
   name: string.clua_log
 - match: \=X\=\>
   name: invalid.clua_log
+- match: \ .*\:[0-9]*\:[ ]
+  name: constant.numeric.clua_log
+- match: \!\!.*
+  name: keyword.clua_log
+- match: \#[A-Z][A-Z]*
+  name: constant.numeric.clua_log
+- match: \~
+  name: constant.numeric.clua_log
+- match: FROM
+  name: constant.numeric.clua_log
 scopeName: source.clua_log
 uuid: c7d0a59f-80e0-4f41-adee-877649329f18
