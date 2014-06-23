@@ -1,11 +1,12 @@
 #DEFINE JSON
+#LICENSE MIT YEAR="" COPYRIGHT_HOLDERS="Craig Mason-Jones"
 -- JSON4Lua: JSON encoding / decoding support for the Lua language.
 -- JSON Library.
 -- Author: Craig Mason-Jones
 -- Homepage: http://json.luaforge.net/
 -- Version: 0.9.40
 -- This library is released under the MIT License (MIT).
--- Please see LICENCE for details.
+-- Please see LICENSE for details.
 -- Modified by skwerlman on 6/15/14 to work as a library under CLua
 local JSON={} JSON.Local={}
 function JSON.Local.decode_scanArray(s,startPos) local array={} local stringLen=string.len(s) assert(string.sub(s,startPos,startPos)=='[','decode_scanArray called but array does not start at position '..startPos..' in string:\n'..s) startPos=startPos+1 repeat startPos=JSON.Local.decode_scanWhitespace(s,startPos) assert(startPos<=stringLen,'JSON String ended unexpectedly scanning array.') local curChar=string.sub(s,startPos,startPos) if (curChar==']') then return array,startPos+1 end if (curChar==',') then startPos=JSON.Local.decode_scanWhitespace(s,startPos+1) end assert(startPos<=stringLen,'JSON String ended unexpectedly scanning array.') object,startPos=JSON.decode(s,startPos) table.insert(array,object) until false end

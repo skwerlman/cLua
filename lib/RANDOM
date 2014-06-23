@@ -1,0 +1,11 @@
+#DEFINE RANDOM
+#LICENSE MIT YEAR="2014" COPYRIGHT_HOLDERS="skwerlman" MODULE="RANDOM"
+-- SPLASH-API: manages JSON-formatted lists of splashtext.
+-- SplashText Library.
+-- Author: skwerlman
+-- Homepage: N/A
+-- Version: 1.0.0
+-- This module is released under the MIT License (MIT).
+-- Please see LICENSE for details.
+local RANDOM={}
+RANDOM.num=function(seed) local X=seed or os.time() local A1=710425941047 local B1=813633012810 local M1=711719770602 return function() X=(A1*X+B1)%M1 return X end end

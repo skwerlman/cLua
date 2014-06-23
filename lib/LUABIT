@@ -1,11 +1,12 @@
 #DEFINE LUABIT
+#LICENSE UNKNOWN
 -- LUABIT: Adds 8- and 32-bit bitwise operations.
 -- LuaBit Library.
 -- Author: ???
 -- Homepage: N/A
 -- Version: unknown
 -- This module is released under the ??? (unknown license).
--- Please see LICENCE for details.
+-- Please see LICENSE for details.
 local LUABIT={} LUABIT.POW31=2^31 LUABIT.POW32=2^32
 if _G.bit then assert(type(bit)=="table","'bit' not a table.") else _G.bit={} end
 if _G.bit.lua then assert(type(bit.lua)=="table","'bit.lua' not a table.") else _G.bit.lua=LUABIT end
