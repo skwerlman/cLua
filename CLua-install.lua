@@ -1,4 +1,4 @@
-local version = '1.4.0'
+local version = '1.5.0'
 local isDebug = false -- set to true to if you like to live on the edge!
 local logName = '/clua-install.log'
 local success = true
@@ -43,6 +43,7 @@ if install_directory:byte(-1) ~= 47 then
   install_directory = install_directory..'/'
 end
 fs.makeDir(fs.combine(install_directory, '/lib'))
+fs.makeDir(fs.combine(install_directory, '/lib/LICENSE'))
 local install_message = "-- FILE MODIFIED BY CLUA-INSTALL"
 log('Creating startup if not exist...')
 local tSrc = {}
@@ -110,7 +111,11 @@ local tFiles = {
     'lib/CRC32',
     'lib/LUABIT',
     'lib/SPLASH',
-    'lib/JSON'
+    'lib/JSON',
+    'lib/RANDOM',
+    'lib/LICENSE/GPLv2',
+    'lib/LICENSE/MIT',
+    'lib/LICENSE/UNKNOWN'
   }
 local repo = 'https://raw.github.com/skwerlman/Clua/master/'
 if isDebug then -- use dev repo instead
