@@ -1,7 +1,7 @@
 #DEFINE SPLASH
-#LICENSE MIT YEAR="2014" COPYRIGHT_HOLDERS="skwerlman" MODULE="SPLASH"
+#LICENSE MIT YEAR="2014" COPYRIGHT_HOLDERS="skwerlman"
 #IFNDEF JSON
-#EXEC print('Including JSON from '.._G.CLUA_LIB..' for SPLASH API')
+#EXEC log('Including JSON from '.._G.CLUA_LIB..' for SPLASH API')
 #INCLUDE JSON FROM ~
 #ENDIFNDEF
 -- SPLASH-API: manages JSON-formatted lists of splashtext.
