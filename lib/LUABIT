@@ -1,5 +1,5 @@
 #DEFINE LUABIT
-#LICENSE MIT YEAR="2007" COPYRIGHT_HOLDERS="lea"
+#LICENSE MIT YEAR=2007 COPYRIGHT_HOLDERS=lea
 -- LUABIT: Adds 8- and 32-bit bitwise operations.
 -- LuaBit Library.
 -- Author: lea
