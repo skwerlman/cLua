@@ -1,6 +1,7 @@
 #DEFINE SPLASH
+#LICENSE MIT YEAR="2014" COPYRIGHT_HOLDERS="skwerlman"
 #IFNDEF JSON
-#EXEC print('Including JSON from '.._G.CLUA_LIB..' for SPLASH API')
+#EXEC log('Including JSON from '.._G.CLUA_LIB..' for SPLASH API')
 #INCLUDE JSON FROM ~
 #ENDIFNDEF
 -- SPLASH-API: manages JSON-formatted lists of splashtext.
@@ -9,7 +10,7 @@
 -- Homepage: N/A
 -- Version: 3.0.0
 -- This module is released under the MIT License (MIT).
--- Please see LICENCE for details.
+-- Please see LICENSE for details.
 local SPLASH={} SPLASH._w=term.getSize() SPLASH.splashtext='None!' SPLASH.texts={} SPLASH.splashloc=nil
 function SPLASH.addText(text) local splash=JSON.readJSON(SPLASH.splashloc) SPLASH.texts=table.concat(SPLASH.texts,text) JSON.writeJSON(SPLASH.splashloc,splash) end
 function SPLASH.getText() SPLASH.texts=JSON.readJSON(SPLASH.splashloc).texts SPLASH.splashtext=SPLASH.texts[math.random(#SPLASH.texts)] SPLASH.splashtext=SPLASH.splashtext:sub(1,_w) end

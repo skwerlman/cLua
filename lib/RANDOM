@@ -1,0 +1,11 @@
+#DEFINE RANDOM
+#LICENSE MIT YEAR="2014" COPYRIGHT_HOLDERS="skwerlman"
+-- RANDOM: A pure-Lua RNG
+-- Random Library.
+-- Author: skwerlman
+-- Homepage: N/A
+-- Version: 1.0.0
+-- This module is released under the MIT License (MIT).
+-- Please see LICENSE for details.
+local RANDOM={}
+function RANDOM.num(s) s=s or os.time() local a,b,m=710425941047,813633012810,711719770602 return function() s=(a*s+b)%m return s end end
