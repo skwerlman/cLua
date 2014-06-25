@@ -1,5 +1,5 @@
 #DEFINE RANDOM
-#LICENSE MIT YEAR="2014" COPYRIGHT_HOLDERS="skwerlman"
+#LICENSE MIT YEAR=2014 COPYRIGHT_HOLDERS=skwerlman
 -- RANDOM: A pure-Lua RNG
 -- Random Library.
 -- Author: skwerlman
