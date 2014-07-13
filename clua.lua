@@ -1,6 +1,7 @@
 local function main(...)
   --PHASE: init
-  local st = os.clock()
+  local st = os.clock() --timer
+  -- these are declared early b/c they're used by the code parser
   local DEFINE, WARNLOOP, VAR, LICENSES, licensePath, tArg, inFileName, outFileName, doLog, dryRun, doRS, quiet, silent, verbose, devel, nodebug, execEnv
 
   --PHASE: functions
@@ -9,20 +10,26 @@ local function main(...)
 Usage:
   clua <input> <output> [--help] [--log]
        [--version] [--dry-run] [--exec:<code> ...]
-       [--define:<flag> ...] [--quiet] [--silent]
-       [--verbose] [--devel] [--no-debug]
+       [--dyn:<var>=<val>[;<var>=<val>...] ...]
+       [--define:<flag>[;<flag>...] ...] [--quiet]
+       [--silent] [--verbose] [--devel]
+       [--no-debug] [--no-trim]
 
   --help          - Display this help message and
                     exit.
-  --log           - Enables logging.  
+  --log           - Enables logging.
   --version       - Print version info and exit.
   --dry-run       - Runs through the compilation,
                     but doesn't modify the output
                     file.
   --exec:<code>   - Executes arbitrary code before
                     compilation. Use ++ instead of
-                    spaces.
-  --define:<flag> - Equivelent to #DEFINE.
+                    spaces, or include the entire
+                    option in double quotes (").
+  --dyn:<var>=<val>[;<var>=<val>...]
+                  - Equivelent to #DYNAMIC-INCLUDE
+  --define:<flag>[;<flag>...]
+                  - Equivelent to #DEFINE.
   --quiet         - Do not print most messages.
   --silent        - Only print errors.
   --verbose       - Prints ALL messages.
@@ -33,13 +40,15 @@ Usage:
                     programs. Not recommended.
   --no-debug      - Don't log DEBUG level messages.
   --self-update   - Downloads and runs the latest
-                    CLua installer, then reboots.]], 17)
+                    CLua installer, then reboots.
+  --no-trim       - Prevents the trimming of empty
+                    lines when writing the output.]], 17)
   end
 
   local function clockAsString()
     local time = os.clock()
     local int, frac = math.modf(time)
-    frac = tostring(frac):sub(3)
+    frac = tostring(frac):sub(3) -- remove '0.'
     if #frac > 8 then -- workaround for massive LuaJ rounding bug (returns stuff like 0.796432E-11 instead of 0)
       frac = '00'
     end
@@ -322,7 +331,7 @@ Usage:
               if not tl then break end
               if tl:byte(1) ~= 35 then -- if line doesn't start with #, put it in the output table
                 fileOut[#fileOut+1] = tl
-              else -- directives should never be in snippets, so this is logged as a warning 
+              else -- directives should never be in snippets, so this is logged as a warning
                 log('Ignoring directive in snippet: '..tl, '[WARNING]')
               end
               table.remove(file, curLine)
@@ -347,16 +356,23 @@ Usage:
               local tl = file[curLine]
               log('removing '..tl, '[DEVEL]', true)
               table.remove(file, curLine)
-              if tl == '#ENDIFVAR' then table.insert(file, 1, '') break end
+              for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
+                if tl == v then depth = depth + 1 end
+              end
+              for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
+                if tl == v then depth = depth - 1 end
+              end
+              log('Depth: '..depth, '[DEVEL]', true)
+              if tl == '#ENDIFVAR' and depth == 0 then table.insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
               log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
               if curLine > #file then
-                assert(false, 'No matching #ENDIFVAR found for #IFVAR on line '..LINENUM..' in '..path) 
+                assert(false, 'No matching #ENDIFVAR found for #IFVAR on line '..LINENUM..' in '..path)
               end
             end
             local errmsg = 'IFVAR directive at line '..ol..' in '..path..' threw an error.'
-            local ret, data = loadstring('return '..name)
+            local ret, data = loadstring('return '..name) -- we use this instead of _G[name] b/c we get more control over the environment this way
             assert(ret, type(data) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
             local val = ret
             setfenv(ret,execEnv)
@@ -383,16 +399,24 @@ Usage:
             local name = line:sub(8)
             local ft = {}
             local ol = LINENUM
+            local depth = 1
             while true do
               local tl = file[curLine]
               log('removing '..tl, '[DEVEL]', true)
               table.remove(file, curLine)
-              if tl == '#ENDIFNVAR' then table.insert(file, 1, '') break end
+              for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
+                if tl == v then depth = depth + 1 end
+              end
+              for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
+                if tl == v then depth = depth - 1 end
+              end
+              log('Depth: '..depth, '[DEVEL]', true)
+              if tl == '#ENDIFNVAR' and depth == 0 then table.insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
               log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
               if curLine > #file then
-                assert(false, 'No matching #ENDIFNVAR found for #IFNVAR on line '..LINENUM..' in '..path) 
+                assert(false, 'No matching #ENDIFNVAR found for #IFNVAR on line '..LINENUM..' in '..path)
               end
             end
             local errmsg = 'IFNVAR directive at line '..ol..' in '..path..' threw an error.'
@@ -426,15 +450,22 @@ Usage:
               local tl = file[curLine]
               log('removing '..tl..' from file', '[DEVEL]', true)
               table.remove(file, curLine)
+              for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
+                if tl == v then depth = depth + 1 end
+              end
+              for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
+                if tl == v then depth = depth - 1 end
+              end
+              log('Depth: '..depth, '[DEVEL]', true)
               log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
               log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
-              if tl == '#ENDIFDEF' then table.insert(file, 1, '') break end
+              if tl == '#ENDIFDEF' and depth == 0 then table.insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('curLine: '..curLine, '[DEVEL]', true)
               log('LINENUM: '..LINENUM, '[DEVEL]', true)
               log('#file: '..#file, '[DEVEL]', true)
               if curLine > #file then
-                assert(false, 'No matching #ENDIFDEF found for #IFDEF on line '..LINENUM..' in '..path) 
+                assert(false, 'No matching #ENDIFDEF found for #IFDEF on line '..LINENUM..' in '..path)
               end
             end
             log('curLine: '..curLine, '[DEVEL]', true)
@@ -462,46 +493,53 @@ Usage:
               local tl = file[curLine]
               log('removing '..tl..' from file', '[DEVEL]', true)
               table.remove(file, curLine)
-              log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true) 
-              log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true) 
-              if tl == '#ENDIFNDEF' then table.insert(file, 1, '')  break end
-              ft[#ft+1] = tl 
-              log('curLine: '..curLine, '[DEVEL]', true) 
-              log('LINENUM: '..LINENUM, '[DEVEL]', true) 
-              log('#file: '..#file, '[DEVEL]', true) 
+              for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
+                if tl == v then depth = depth + 1 end
+              end
+              for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
+                if tl == v then depth = depth - 1 end
+              end
+              log('Depth: '..depth, '[DEVEL]', true)
+              log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
+              log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+              if tl == '#ENDIFNDEF' and depth == 0 then table.insert(file, 1, '')  break end
+              ft[#ft+1] = tl
+              log('curLine: '..curLine, '[DEVEL]', true)
+              log('LINENUM: '..LINENUM, '[DEVEL]', true)
+              log('#file: '..#file, '[DEVEL]', true)
               if curLine > #file then
-                assert(false, 'No matching #ENDIFNDEF found for #IFNDEF on line '..LINENUM..' in '..path)  
+                assert(false, 'No matching #ENDIFNDEF found for #IFNDEF on line '..LINENUM..' in '..path)
               end
             end
-            log('curLine: '..curLine, '[DEVEL]', true) 
-            log('LINENUM: '..LINENUM, '[DEVEL]', true) 
-            log('#file: '..#file, '[DEVEL]', true) 
-            log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true) 
-            log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true) 
-            if not DEFINE[name] then 
-              log('No definition found for '..name, '[DEBUG]', true) 
-              log('removing '..ft[1]..' from ft', '[DEVEL]', true) 
+            log('curLine: '..curLine, '[DEVEL]', true)
+            log('LINENUM: '..LINENUM, '[DEVEL]', true)
+            log('#file: '..#file, '[DEVEL]', true)
+            log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
+            log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+            if not DEFINE[name] then
+              log('No definition found for '..name, '[DEBUG]', true)
+              log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               table.remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
-            else 
+            else
               log('Definition found for '..name, '[DEBUG]', true)
               LINENUM = LINENUM + #ft
             end
-            log('#ENDIFNDEF', '[DEVEL]', true) 
-   
+            log('#ENDIFNDEF', '[DEVEL]', true)
+
           elseif line:sub(1, 5) == '#ELSE' then
-            assert(false, 'Orphaned #ELSE on line '..LINENUM..' in '..path) -- always error since #ELSEs should be absorbed by #IFDEF or #IFNDEF 
-   
-          elseif line:sub(1, 8) == '#ELSEIF ' then 
-            assert(false, 'Orphaned #ELSEIF on line '..LINENUM..' in '..path) -- always error since #ELSEIFs should be absorbed by #IFDEF or #IFNDEF 
-   
+            assert(false, 'Orphaned #ELSE on line '..LINENUM..' in '..path) -- always error since #ELSEs should be absorbed by #IFDEF or #IFNDEF
+
+          elseif line:sub(1, 8) == '#ELSEIF ' then
+            assert(false, 'Orphaned #ELSEIF on line '..LINENUM..' in '..path) -- always error since #ELSEIFs should be absorbed by #IFDEF or #IFNDEF
+
           elseif line:sub(1, 9) == '#ELSEIFN ' then
-            assert(false, 'Orphaned #ELSEIFN on line '..LINENUM..' in '..path) -- always error since #ELSEIFNs should be absorbed by #IFDEF or #IFNDEF 
-   
+            assert(false, 'Orphaned #ELSEIFN on line '..LINENUM..' in '..path) -- always error since #ELSEIFNs should be absorbed by #IFDEF or #IFNDEF
+
           elseif line == '#ENDIFVAR' then
             assert(false, 'Orphaned #ENDIFVAR on line '..LINENUM..' in '..path) -- always error since #ENDIFVARs should be absorbed by #IFVAR
-   
+
           elseif line == '#ENDIFNVAR' then
             assert(false, 'Orphaned #ENDIFNVAR on line '..LINENUM..' in '..path) -- always error since #ENDIFNVARs should be absorbed by #IFNVAR
 
@@ -552,8 +590,11 @@ Usage:
         --execEnv=concat(execEnv, getfenv(func), true)
         assert(ret, type(data) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
 
-      elseif v:sub(1,6) == 'define' then
-        DEFINE[v:sub(8)] = {'cmd', k}
+      elseif v:sub(1,6) == 'define' then -- e.g.: --define:html;no-oneos;no-color
+        local lt = tokenize(v:sub(8), ';')
+        for _,i in ipairs(lt) do
+          DEFINE[i] = {'@@ command line', k}
+        end
 
       elseif v == 'log' then
         doLog = true
@@ -563,6 +604,9 @@ Usage:
           end
           fs.move(CLUA_LOG, CLUA_LOG..'.old')
         end
+
+      elseif v =='no-trim' then
+        preserveFormatting = true
 
       elseif v == 'quiet' then
         quiet = true
@@ -578,7 +622,7 @@ Usage:
 
       elseif v == 'no-debug' then
         nodebug = true
-      
+
       elseif v == 'dry-run' then
         dryRun = true
 
@@ -597,6 +641,14 @@ Usage:
       elseif v == 'self-update' then
         shell.run('pastebin', 'get zPMasvZ2 '..CLUA_HOME..'temp-clua-updater')
         return shell.run(CLUA_HOME..'temp-clua-updater') -- will remove itself post-install
+
+      elseif v:sub(1,3) == 'dyn' then -- e.g.: --dyn:version=1.2.7;license=GPLv3
+        local lt = tokenize(line:sub(5), ';')
+        for _,i in ipairs(lt) do
+          local d = i:find('=')
+          assert(d, 'Option dyn (#'..k..') contained an\ninvalid VAR=DEF structure:\n'..i)
+          VAR[i:sub(1, d-1)] = i:sub(d+1)
+        end
 
       else
         assert(false, 'Bad option #'..k..': '..v..'\nUnknown option')
@@ -659,7 +711,7 @@ Usage:
     local outFile = fs.open(outFileName, 'w')
     for ln,line in ipairs(tSrc) do
       log(outFileName..':'..ln..': '..line, '[DEVEL]', true)
-      if line ~= '' then
+      if line ~= '' or preserveFormatting then
         outFile.writeLine(line)
       else
         log('Ignoring line '..ln..' because it\'s empty', '[DEBUG]', true)
