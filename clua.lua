@@ -72,7 +72,7 @@ Usage:
     msg = msg or 'No message passed to log!'
     msg = tostring(msg)
     if not noPrint then
-      if (silent or quiet) and (tag == '[ERROR]' or tag == '[DONE]') then
+      if (silent or quiet) and tag == '[ERROR]' then
         print(msg)
       elseif quiet and tag == '[WARNING]' then
         print(msg)
@@ -87,6 +87,7 @@ Usage:
     end
     if doLog then
       local logFile = fs.open(CLUA_LOG, 'a')
+      if not logFile then assert(false, 'Could not open a log file!') end
       tag = tag..string.rep(' ', math.max(0, 9-#tag))
       msg = '['..clockAsString()..']'..tag..' '..msg:gsub('\n', '\n['..clockAsString()..']'..tag..' ')
       logFile.writeLine(msg)
@@ -271,28 +272,28 @@ Usage:
               VAR[v:sub(1, d-1)] = v:sub(d+1)
             end
             log('Table VAR:\n'..textutils.serialize(VAR), '[DEVEL]', true)
-            if LICENSES[VAR.MODULE] then
-              assert(not LICENSES[VAR.MODULE].isLicensed, VAR.MODULE..' already has a license')
+            if LICENSES[VAR.MODULE] and LICENSES[VAR.MODULE].isLicensed then
+              log(VAR.MODULE..' already has a license', '[WARNING]')
             else
               LICENSES[VAR.MODULE] = {}
-            end
-            LICENSES[VAR.MODULE].isLicensed = p
-            log('Table LICENSES:\n'..textutils.serialize(LICENSES), '[DEVEL]', true)
-            local fn = fs.combine(CLUA_LIB..'/LICENSE', p)
-            log(fn, '[DEVEL]', true)
-            assert(fs.exists(fn), '#LICENSE pointed to a non-existant file on line '..LINENUM..' in '..path)
-            assert(not fs.isDir(fn), '#LICENSE pointed to a folder instead of a file on line '..LINENUM..' in '..path)
-            local fo = parseFile(fn, VAR.MODULE)
-            if not dryRun then
-              --write parsed source table to output file
-              log('Writing source table to '..licensePath..'...')
-              local outFile = fs.open(licensePath, 'a')
-              for ln,line in ipairs(fo) do
-                outFile.writeLine(line)
+              LICENSES[VAR.MODULE].isLicensed = p
+              log('Table LICENSES:\n'..textutils.serialize(LICENSES), '[DEVEL]', true)
+              local fn = fs.combine(CLUA_LIB..'/LICENSE', p)
+              log(fn, '[DEVEL]', true)
+              assert(fs.exists(fn), '#LICENSE pointed to a non-existant file on line '..LINENUM..' in '..path)
+              assert(not fs.isDir(fn), '#LICENSE pointed to a folder instead of a file on line '..LINENUM..' in '..path)
+              local fo = parseFile(fn, VAR.MODULE)
+              if not dryRun then
+                --write parsed source table to output file
+                log('Writing source table to '..licensePath..'...')
+                local outFile = fs.open(licensePath, 'a')
+                for ln,line in ipairs(fo) do
+                  outFile.writeLine(line)
+                end
+                outFile.close()
               end
-              outFile.close()
+              log('Successfully licensed '..fn)
             end
-            log('Successfully licensed '..fn)
 
           elseif line:sub(1, 8) == '#DEFINE ' then
             log('#DEFINE', '[DEVEL]', true)
@@ -345,28 +346,30 @@ Usage:
             setfenv(func,execEnv)
             local ret, err = pcall(func)
             --execEnv=getfenv(func)
-            assert(ret, type(err) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
+            assert(ret, type(err) == 'string' and errmsg..'\n'..tostring(err) or errmsg..'\nNo error message available')
 
           elseif line:sub(1,7) == '#IFVAR ' then
             log('#IFVAR', '[DEVEL]', true)
             local name = line:sub(8)
             local ft = {}
             local ol = LINENUM
+            local depth = 0
             while true do
               local tl = file[curLine]
               log('removing '..tl, '[DEVEL]', true)
               table.remove(file, curLine)
+              local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if tl == v then depth = depth + 1 end
+                if l == v then depth = depth+1 end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if tl == v then depth = depth - 1 end
+                if l == v then depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
               if tl == '#ENDIFVAR' and depth == 0 then table.insert(file, 1, '') break end
               ft[#ft+1] = tl
-              log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
-              log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+              log('Table ft: '..#ft, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
               if curLine > #file then
                 assert(false, 'No matching #ENDIFVAR found for #IFVAR on line '..LINENUM..' in '..path)
               end
@@ -387,10 +390,11 @@ Usage:
               table.remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             else
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('No definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM + #ft
+              LINENUM = LINENUM+#ft
             end
             log('#ENDIFVAR', '[DEVEL]', true)
 
@@ -399,22 +403,23 @@ Usage:
             local name = line:sub(8)
             local ft = {}
             local ol = LINENUM
-            local depth = 1
+            local depth = 0
             while true do
               local tl = file[curLine]
               log('removing '..tl, '[DEVEL]', true)
               table.remove(file, curLine)
+              local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if tl == v then depth = depth + 1 end
+                if l == v then depth = depth+1 end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if tl == v then depth = depth - 1 end
+                if l == v then depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
               if tl == '#ENDIFNVAR' and depth == 0 then table.insert(file, 1, '') break end
               ft[#ft+1] = tl
-              log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
-              log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+              log('Table ft: '..#ft, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
               if curLine > #file then
                 assert(false, 'No matching #ENDIFNVAR found for #IFNVAR on line '..LINENUM..' in '..path)
               end
@@ -435,10 +440,11 @@ Usage:
               table.remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             else
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM + #ft
+              LINENUM = LINENUM+#ft
             end
             log('#ENDIFNVAR', '[DEVEL]', true)
 
@@ -446,19 +452,21 @@ Usage:
             log('#IFDEF', '[DEVEL]', true)
             local name = line:sub(8)
             local ft = {}
+            local depth = 0
             while true do
               local tl = file[curLine]
               log('removing '..tl..' from file', '[DEVEL]', true)
               table.remove(file, curLine)
+              local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if tl == v then depth = depth + 1 end
+                if l == v then depth = depth+1 end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if tl == v then depth = depth - 1 end
+                if l == v then depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
-              log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
-              log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+              log('Table ft: '..#ft, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
               if tl == '#ENDIFDEF' and depth == 0 then table.insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('curLine: '..curLine, '[DEVEL]', true)
@@ -471,17 +479,18 @@ Usage:
             log('curLine: '..curLine, '[DEVEL]', true)
             log('LINENUM: '..LINENUM, '[DEVEL]', true)
             log('#file: '..#file, '[DEVEL]', true)
-            log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
-            log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+            log('Table ft: '..#ft, '[DEVEL]', true)
+            log('Table file: '..#file, '[DEVEL]', true)
             if DEFINE[name] then
               log('Definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               table.remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             else
               log('No definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM + #ft
+              LINENUM = LINENUM+#ft
             end
             log('#ENDIFDEF', '[DEVEL]', true)
 
@@ -489,19 +498,21 @@ Usage:
             log('#IFNDEF', '[DEVEL]', true)
             local name = line:sub(9)
             local ft = {}
+            local depth = 0
             while true do
               local tl = file[curLine]
               log('removing '..tl..' from file', '[DEVEL]', true)
               table.remove(file, curLine)
+              local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if tl == v then depth = depth + 1 end
+                if l == v then depth = depth+1 end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if tl == v then depth = depth - 1 end
+                if l == v then depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
-              log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
-              log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+              log('Table ft: '..#ft, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
               if tl == '#ENDIFNDEF' and depth == 0 then table.insert(file, 1, '')  break end
               ft[#ft+1] = tl
               log('curLine: '..curLine, '[DEVEL]', true)
@@ -514,17 +525,18 @@ Usage:
             log('curLine: '..curLine, '[DEVEL]', true)
             log('LINENUM: '..LINENUM, '[DEVEL]', true)
             log('#file: '..#file, '[DEVEL]', true)
-            log('Table ft:\n'..textutils.serialize(ft), '[DEVEL]', true)
-            log('Table file:\n'..textutils.serialize(file), '[DEVEL]', true)
+            log('Table ft: '..#ft, '[DEVEL]', true)
+            log('Table file: '..#file, '[DEVEL]', true)
             if not DEFINE[name] then
               log('No definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               table.remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             else
               log('Definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM + #ft
+              LINENUM = LINENUM+#ft
             end
             log('#ENDIFNDEF', '[DEVEL]', true)
 
