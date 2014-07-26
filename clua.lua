@@ -13,7 +13,8 @@ Usage:
        [--dyn:<var>=<val>[;<var>=<val>...] ...]
        [--define:<flag>[;<flag>...] ...] [--quiet]
        [--silent] [--verbose] [--devel]
-       [--no-debug] [--no-trim]
+       [--no-debug] [--no-trim] [--to-path:/path/]
+       [--from-path:/path/]
 
   --help          - Display this help message and
                     exit.
@@ -42,7 +43,13 @@ Usage:
   --self-update   - Downloads and runs the latest
                     CLua installer, then reboots.
   --no-trim       - Prevents the trimming of empty
-                    lines when writing the output.]], 17)
+                    lines when writing the output.
+  --to-path:/path/
+                  - Specifies where to output the 
+                    compiled program and license.
+  --from-path:/path/
+                  - Specifies where to look for 
+                  the main source file.]], 17)
   end
 
   local function clockAsString()
