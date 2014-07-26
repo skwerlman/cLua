@@ -1,4 +1,4 @@
-local r='1.5.0'local i=false
+local r='2.0.0'local i=false
 local e='/clua-install.log'local s=true
 local o={}if fs.exists(e)then
 if fs.exists(e..'.old')then

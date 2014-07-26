@@ -1,0 +1,199 @@
+
+--======--
+-- INIT --
+--======--
+
+
+-- logging doubles as test for EXEC
+#EXEC log('Begin test\n')
+
+
+--===========================--
+-- BEGIN FUNDAMENTAL TESTING --
+--===========================--
+
+
+#EXEC log('include')
+#INCLUDE test1.2 FROM ?here
+#EXEC log('test passed\n')
+
+
+#EXEC log('define')
+#DEFINE true
+#EXEC log('test passed\n')
+
+
+--===========================--
+-- BEGIN CONDITIONAL TESTING --
+--===========================--
+
+
+#EXEC log('true ifvar')
+#IFVAR true
+#EXEC log('it works')
+#ENDIFVAR
+#EXEC log('test passed\n')
+
+
+#EXEC log('true ifnvar')
+#IFNVAR null
+#EXEC log('it works')
+#ENDIFNVAR
+#EXEC log('test passed\n')
+
+
+#EXEC log('true ifdef')
+#IFDEF true
+#EXEC log('it works')
+#ENDIFDEF
+#EXEC log('test passed\n')
+
+
+#EXEC log('true ifndef')
+#IFNDEF null
+#EXEC log('it works')
+#ENDIFNDEF
+#EXEC log('test passed\n')
+
+
+#EXEC log('false ifvar')
+#IFVAR null
+#EXEC error('test failed')
+#ENDIFVAR
+#EXEC log('test passed\n')
+
+
+#EXEC log('false ifnvar')
+#IFNVAR true
+#EXEC error('test failed')
+#ENDIFNVAR
+#EXEC log('test passed\n')
+
+
+#EXEC log('false ifdef')
+#IFDEF null
+#EXEC error('test failed')
+#ENDIFDEF
+#EXEC log('test passed\n')
+
+
+#EXEC log('false ifndef')
+#IFNDEF true
+#EXEC error('test failed')
+#ENDIFNDEF
+#EXEC log('test passed\n')
+
+
+#EXEC log('nested ifvar')
+#IFVAR true
+#EXEC log('level 1 passed')
+#IFVAR true
+#EXEC log('level 2 passed')
+#IFVAR true
+#EXEC log('level 3 passed')
+#ENDIFVAR
+#ENDIFVAR
+#ENDIFVAR
+#EXEC log('test passed\n')
+
+
+#EXEC log('nested ifnvar')
+#IFNVAR null
+#EXEC log('level 1 passed')
+#IFNVAR null
+#EXEC log('level 2 passed')
+#IFNVAR null
+#EXEC log('level 3 passed')
+#ENDIFNVAR
+#ENDIFNVAR
+#ENDIFNVAR
+#EXEC log('test passed\n')
+
+
+#EXEC log('nested ifdef')
+#IFDEF true
+#EXEC log('level 1 passed')
+#IFDEF true
+#EXEC log('level 2 passed')
+#IFDEF true
+#EXEC log('level 3 passed')
+#ENDIFDEF
+#ENDIFDEF
+#ENDIFDEF
+#EXEC log('test passed\n')
+
+
+#EXEC log('nested ifndef')
+#IFNDEF null
+#EXEC log('level 1 passed')
+#IFNDEF null
+#EXEC log('level 2 passed')
+#IFNDEF null
+#EXEC log('level 3 passed')
+#ENDIFNDEF
+#ENDIFNDEF
+#ENDIFNDEF
+#EXEC log('test passed\n')
+
+
+--=======================--
+-- BEGIN DYNAMIC TESTING --
+--=======================--
+
+
+#EXEC log('setdynamicvar')
+#SETDYNAMICVAR var1:test var2:passed
+#EXEC log('test passed\n')
+
+
+#EXEC log('dynamic-include')
+#DYNAMIC-INCLUDE < > print('<var1> <var2>')
+#EXEC log('test passed\n')
+
+
+#EXEC log('license')
+#LICENSE GPLv2 COPYRIGHT_HOLDERS:skwerlman
+-- ensure LICENSE actually ran
+#EXEC if not fs.exists(outputFolder..'output.licensing') then error('LICENSE failed to generate output') end
+#EXEC log('test passed\n')
+
+
+#EXEC log('snippet (warnings are normal for this test)')
+#INCLUDE test1.3 FROM ?here
+#EXEC log('test passed\n')
+
+
+#EXEC log('exec environment dump')
+#EXEC for k,v in pairs(_G) do log(tostring(k)..' = '..tostring(v)) end
+#EXEC log('done\n')
+
+
+--=======================--
+-- BEGIN LIBRARY TESTING --
+--=======================--
+
+
+-- This test needs to happen before lib-crc32 to avoid DEFINE warnings
+#EXEC log('lib-luabit')
+#INCLUDE LUABIT FROM ~
+#EXEC log('test passed\n')
+
+
+#EXEC log('lib-crc32')
+#INCLUDE CRC32 FROM ~
+#EXEC log('test passed\n')
+
+
+#EXEC log('lib-json')
+#INCLUDE JSON FROM ~
+#EXEC log('test passed\n')
+
+
+#EXEC log('lib-random')
+#INCLUDE RANDOM FROM ~
+#EXEC log('test passed\n')
+
+
+#EXEC log('lib-splash')
+#INCLUDE SPLASH FROM ~
+#EXEC log('test passed\n')

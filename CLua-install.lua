@@ -1,4 +1,4 @@
-local version = '1.5.0'
+local version = '2.0.0'
 local isDebug = false -- set to true to if you like to live on the edge!
 local logName = '/clua-install.log'
 local success = true
