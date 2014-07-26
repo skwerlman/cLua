@@ -2,7 +2,7 @@ local function main(...)
   --PHASE: init
   local st = os.clock() --timer
   -- these are declared early b/c they're used by the code parser
-  local DEFINE, WARNLOOP, VAR, LICENSES, licensePath, tArg, inFileName, outFileName, doLog, dryRun, doRS, quiet, silent, verbose, devel, nodebug, execEnv, inputFolder, outputFolder
+  local DEFINE, WARNLOOP, VAR, LICENSES, licensePath, tArg, inFileName, outFileName, doLog, dryRun, doRS, quiet, silent, verbose, devel, nodebug, execEnv, inputFolder, outputFolder, preserveFormatting
 
   --PHASE: functions
   local function printUsage()
@@ -207,8 +207,8 @@ Usage:
           if line:sub(1, 9) == '#INCLUDE ' then
             log('#INCLUDE', '[DEVEL]', true)
             line = line:gsub('~', CLUA_LIB)
-            line = line:gsub('^here', inputFolder)
-            line = line:gsub('^there', outputFolder)
+            line = line:gsub('?here', inputFolder)
+            line = line:gsub('?there', outputFolder)
             local i = line:find(' FROM ')
             assert(i, '#INCLUDE had no matching FROM at line '..LINENUM..' in '..path)
             local pt = line:sub(i+6)
@@ -706,8 +706,6 @@ Usage:
     nodebug = false
   end
 
-  licensePath = outFileName..'.licensing'
-
   if CLUA_VERSION then
     log('CLua '..CLUA_VERSION, '[OKAY]', true)
   else
@@ -717,15 +715,21 @@ Usage:
   log('Enable logging: '..tostring(doLog), '[DEBUG]')
   assert(CLUA_LIB, 'CLUA_LIB is nil!\nCannot find library location!\nDid you modify /startup?')
 
+  inFileName = inputFolder..inFileName
+  outFileName = outputFolder..outFileName
+  licensePath = outFileName..'.licensing'
+
+  log('Input File: '..inFileName, '[DEBUG]', true)
+  log('Output File: '..outFileName, '[DEBUG]', true)
+  log('License Path: '..licensePath, '[DEBUG]', true)
+
   if fs.exists(licensePath) then
     assert(not fs.isDir(licensePath), licensePath..' is a directory')
     fs.delete(licensePath)
   end
 
   --PHASE: parse
-  shell.setDir(inputFolder)
   local tSrc = parseFile(inFileName)
-  shell.setDir(outputFolder)
 
   --PHASE: postparse
   if not dryRun then

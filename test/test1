@@ -14,7 +14,7 @@
 
 
 #EXEC log('include')
-#INCLUDE test1.2 FROM /
+#INCLUDE test1.2 FROM ?here
 #EXEC log('test passed\n')
 
 
@@ -154,12 +154,12 @@
 #EXEC log('license')
 #LICENSE GPLv2 COPYRIGHT_HOLDERS:skwerlman
 -- ensure LICENSE actually ran
-#EXEC if not fs.exists('test.licensing') then error('LICENSE failed to generate output') end
+#EXEC if not fs.exists(outputFolder..'output.licensing') then error('LICENSE failed to generate output') end
 #EXEC log('test passed\n')
 
 
 #EXEC log('snippet (warnings are normal for this test)')
-#INCLUDE test1.3 FROM /
+#INCLUDE test1.3 FROM ?here
 #EXEC log('test passed\n')
 
 
