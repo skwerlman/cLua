@@ -2,7 +2,7 @@ local function main(...)
   --PHASE: init
   local st = os.clock() --timer
   -- these are declared early b/c they're used by the code parser
-  local DEFINE, WARNLOOP, VAR, LICENSES, licensePath, tArg, inFileName, outFileName, doLog, dryRun, doRS, quiet, silent, verbose, devel, nodebug, execEnv
+  local DEFINE, WARNLOOP, VAR, LICENSES, licensePath, tArg, inFileName, outFileName, doLog, dryRun, doRS, quiet, silent, verbose, devel, nodebug, execEnv, inputFolder, outputFolder
 
   --PHASE: functions
   local function printUsage()
@@ -207,6 +207,8 @@ Usage:
           if line:sub(1, 9) == '#INCLUDE ' then
             log('#INCLUDE', '[DEVEL]', true)
             line = line:gsub('~', CLUA_LIB)
+            line = line:gsub('^here', inputFolder)
+            line = line:gsub('^there', outputFolder)
             local i = line:find(' FROM ')
             assert(i, '#INCLUDE had no matching FROM at line '..LINENUM..' in '..path)
             local pt = line:sub(i+6)
@@ -263,7 +265,7 @@ Usage:
           elseif line:sub(1, 9) == '#LICENSE ' then
             log('#LICENSE', '[DEVEL]', true)
             local lt = tokenize(line:sub(10))
-            assert(not (#lt<1), '#LICENSE directive on line '..LINENUM..' in '..path..' did not specify a license')
+            assert(#lt>=1, '#LICENSE directive on line '..LINENUM..' in '..path..' did not specify a license')
             local p = lt[1]
             table.remove(lt, 1)
             for k,v in ipairs(lt) do
@@ -585,7 +587,7 @@ Usage:
   LICENSES = {}
 
   --expose certain internals (read-only) to code called by --exec:, #EXEC, #IFVAR, and #IFNVAR
-  execEnv=concat(_G,{log=log,doLog=doLog,doRS=doRS,quiet=quiet,silent=silent,verbose=verbose,devel=devel,nodebug=nodebug,assert=assert})
+  execEnv=concat(_G,{log=log,doLog=doLog,doRS=doRS,quiet=quiet,silent=silent,verbose=verbose,devel=devel,nodebug=nodebug,assert=assert,inputFolder=inputFolder,outputFolder=outputFolder})
 
   --handle args
   tArg = { ... }
@@ -607,6 +609,12 @@ Usage:
         for _,i in ipairs(lt) do
           DEFINE[i] = {'@@ command line', k}
         end
+
+      elseif v:sub(1,9) == 'from-path' then -- e.g.: --in-path:/clua/
+        inputFolder = v:sub(11)
+
+      elseif v:sub(1,7) == 'to-path' then -- e.g.: --to-path:/clua/
+        outputFolder = v:sub(9)
 
       elseif v == 'log' then
         doLog = true
@@ -679,7 +687,9 @@ Usage:
       nFiles = nFiles + 1
     end
     --update env for exec each iter
-    execEnv=concat(_G,{log=log,doLog=doLog,doRS=doRS,quiet=quiet,silent=silent,verbose=verbose,devel=devel,nodebug=nodebug,assert=assert}, true)
+    inputFolder = inputFolder or shell.dir()
+    outputFolder = outputFolder or shell.dir()
+    execEnv=concat(_G,{log=log,doLog=doLog,doRS=doRS,quiet=quiet,silent=silent,verbose=verbose,devel=devel,nodebug=nodebug,assert=assert,inputFolder=inputFolder,outputFolder=outputFolder}, true)
   end
   if not (inFileName and outFileName) then
     return printUsage()
@@ -713,7 +723,9 @@ Usage:
   end
 
   --PHASE: parse
+  shell.setDir(inputFolder)
   local tSrc = parseFile(inFileName)
+  shell.setDir(outputFolder)
 
   --PHASE: postparse
   if not dryRun then
