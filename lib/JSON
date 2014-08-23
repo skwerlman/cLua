@@ -1,5 +1,5 @@
 #DEFINE JSON
-#LICENSE MIT YEAR=2009 COPYRIGHT_HOLDERS=Craig++Mason-Jones
+#LICENSE MIT YEAR:2009 COPYRIGHT_HOLDERS:Craig++Mason-Jones
 -- JSON4Lua: JSON encoding / decoding support for the Lua language.
 -- JSON Library.
 -- Author: Craig Mason-Jones
