@@ -86,7 +86,7 @@ clua <input> <output> [--help] [-?] [--log] [--version] [--dry-run] [--exec:<cod
 --from-path:/path/ - Specifies where to look for the main source file.
 ```
 
-Don't worry about including clua's path when you call it; the installer takes care of that for you.
+Don't worry about including cLua's path when you call it; the installer takes care of that for you.
 
 <a name="when-should-i-use-it"></a>
 ### When should I use it?
@@ -113,8 +113,8 @@ to install it.
 If that doesn't work, type:
 
 ```
-pastebin get zPMasvZ2 clua-inst
-clua-inst
+pastebin get zPMasvZ2 cLua-inst
+cLua-inst
 ```
 The installer will ask you where you'd like it installed; I recommend using `/clua`, but it's really a matter of preference.
 
