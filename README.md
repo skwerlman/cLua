@@ -165,11 +165,24 @@ My current To-Do list (in no particular order):
 * Add `#ELSEIFN` directive
 * Fix everything in the 'Known Bugs' section
 * Update to the current CC
+* Add `--minify`
+  * Figure out how to get LuaMinify running under CC
+  * Add tests for minify
+* Merge logging options
+* Port OneOS to cLua
+* Add short versions of most options
+* Update documentation
+* Add optional examples folder
+* Add more libraries
+* Port cLua to cLua
+  * Split cLua.lua into seperate parts
+* Improve code comments
+* Clean up code style
 
 My top three priorities ATM (most to least important):
-  1. Add `#ELSE`, `#ELSEIF`, and `#ELSEIFN`
-  2. ???
-  3. ???
+  1. Add `--minify` option
+  2. Merge logging options into single `--log-level=` option
+  3. Add `#ELSE`, `#ELSEIF`, and `#ELSEIFN`
 
 
 <a name="what-if-theres-an-issue"></a>
