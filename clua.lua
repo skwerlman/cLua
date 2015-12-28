@@ -1,6 +1,45 @@
+local tostring = tostring
+local print = print
+local type = type
+local error = error
+local pairs = pairs
+local ipairs = ipairs
+local unpack = unpack
+local assert = assert
+local loadstring = loadstring
+local setfenv = setfenv
+local pcall = pcall
+
+local sleep = sleep
+
+local setOutput = rs.setOutput
+local table = table
+local math = math
+local string = string
+local os = os
+local shell = shell
+local textutils = textutils
+
+local insert = table.insert
+local remove = table.remove
+local isDir = fs.isDir
+local open = fs.open
+local exists = fs.exists
+local combine = fs.combine
+local delete = fs.delete
+local move = fs.move
+local serialize = textutils.serialize
+
+local _G = _G
+local CLUA_VERSION = _G.CLUA_VERSION
+local CLUA_LOG = _G.CLUA_LOG
+local CLUA_LIB = _G.CLUA_LIB
+local CLUA_HOME = _G.CLUA_HOME
+
 local function main(...)
   --PHASE: init
   local st = os.clock() --timer
+
   -- these are declared early b/c they're used by the code parser
   local DEFINE, WARNLOOP, VAR, LICENSES, licensePath, tArg, inFileName, outFileName, doLog, dryRun, doRS, quiet, silent, verbose, devel, nodebug, execEnv, inputFolder, outputFolder, preserveFormatting
 
@@ -88,12 +127,12 @@ Usage:
       end
     end
     if doRS then -- if you'd like to use this for whatever, run with '--rs'
-      if tag == '[ERROR]' then rs.setOutput('right', true)
-      elseif tag == '[WARNING]' then rs.setOutput('left', true)
-      elseif tag =='[DONE]' then rs.setOutput('top', true) end
+      if tag == '[ERROR]' then setOutput('right', true)
+      elseif tag == '[WARNING]' then setOutput('left', true)
+      elseif tag =='[DONE]' then setOutput('top', true) end
     end
     if doLog then
-      local logFile = fs.open(CLUA_LOG, 'a')
+      local logFile = open(CLUA_LOG, 'a')
       if not logFile then assert(false, 'Could not open a log file!') end
       tag = tag..string.rep(' ', math.max(0, 9-#tag))
       msg = '['..clockAsString()..']'..tag..' '..msg:gsub('\n', '\n['..clockAsString()..']'..tag..' ')
@@ -113,11 +152,11 @@ Usage:
   end
 
   local function fileToTable(path)
-    assert(fs.exists(path), path..' does not exist!')
-    assert(not fs.isDir(path), path..' is a directory!')
+    assert(exists(path), path..' does not exist!')
+    assert(not isDir(path), path..' is a directory!')
     log('Building source table from '..path..'...', '[DEBUG]', true)
     local tSrc = {}
-    local inFile = fs.open(path, 'r')
+    local inFile = open(path, 'r')
     while true do
       local line = inFile.readLine()
       if not line then break end
@@ -134,7 +173,7 @@ Usage:
     log('Trying to tokenize "'..str..'"', '[DEVEL]', true)
     local tokens = {}
     while true do
-      i = str:find(delim)
+      local i = str:find(delim)
       if not i then tokens[#tokens+1] = str break end
       tokens[#tokens+1] = str:sub(1,i-1)
       str = str:sub(i+1)
@@ -142,10 +181,10 @@ Usage:
     for k,v in ipairs(tokens) do
       tokens[k] = v:gsub('++', ' ')
       if v == '' and not preserveFormatting then
-        table.remove(tokens, k)
+        remove(tokens, k)
       end
     end
-    log(textutils.serialize(tokens), '[DEVEL]', true)
+    log(serialize(tokens), '[DEVEL]', true)
     return tokens
   end
 
@@ -173,14 +212,18 @@ Usage:
       log('Appending source tables...', '[DEBUG]', true)
     end
     if table2 then
+      local i = 1
       for k,v in pairs(table2) do
         if type(k) ~= 'number' then
           table1[k] = v
         else
-          table.insert(table1, table.maxn(table1)+1, v)
+          insert(table1, table.maxn(table1)+1, v)
         end
-        os.queueEvent('clua') -- avoid crashes in massive files
-        os.pullEvent('clua')
+        i = i+1
+        if math.floor(i/25) == i/25 then
+          os.queueEvent('clua') -- avoid crashes in massive files
+          os.pullEvent('clua')
+        end
       end
     else
       log('concat got a nil second arg instead of a table\nReturning first arg','[WARNING]')
@@ -219,11 +262,11 @@ Usage:
             local i = line:find(' FROM ')
             assert(i, '#INCLUDE had no matching FROM at line '..LINENUM..' in '..path)
             local pt = line:sub(i+6)
-            assert(fs.exists(pt), 'FROM pointed to non-existant folder on line '..LINENUM..' in '..path)
-            assert(fs.isDir(pt), 'FROM pointed to a file instead of a folder on line '..LINENUM..' in '..path)
-            local fn = fs.combine(pt, line:sub(10,i-1))
-            assert(fs.exists(fn), '#INCLUDE-FROM pointed to a non-existant file on line '..LINENUM..' in '..path)
-            assert(not fs.isDir(fn), '#INCLUDE-FROM pointed to a folder instead of a file on line '..LINENUM..' in '..path)
+            assert(exists(pt), 'FROM pointed to non-existant folder on line '..LINENUM..' in '..path)
+            assert(isDir(pt), 'FROM pointed to a file instead of a folder on line '..LINENUM..' in '..path)
+            local fn = combine(pt, line:sub(10,i-1))
+            assert(exists(fn), '#INCLUDE-FROM pointed to a non-existant file on line '..LINENUM..' in '..path)
+            assert(not isDir(fn), '#INCLUDE-FROM pointed to a folder instead of a file on line '..LINENUM..' in '..path)
             local fo = parseFile(fn)
             fileOut = concat(fileOut, fo)
             log('Successfully included '..fn)
@@ -236,15 +279,15 @@ Usage:
               assert(d, '#SETDYNAMICVAR on line '..LINENUM..' in '..path..' contained an\ninvalid VAR:DEF structure')
               VAR[v:sub(1, d-1)] = v:sub(d+1)
             end
-            log('Table VAR:\n'..textutils.serialize(VAR), '[DEVEL]', true)
+            log('Table VAR:\n'..serialize(VAR), '[DEVEL]', true)
 
           elseif line:sub(1, 17) == '#DYNAMIC-INCLUDE ' then
             log('#DYNAMIC-INCLUDE', '[DEVEL]', true)
             local lt = tokenize(line:sub(18), ' ', true) -- we want to preserve fomatting here, so we override table trimming
             local d1 = lt[1]
-            table.remove(lt, 1)
+            remove(lt, 1)
             local d2 = lt[1]
-            table.remove(lt, 1)
+            remove(lt, 1)
             local fo = ''
             for _,v in ipairs(lt) do
               while v:find(d1) and v:find(d2) do
@@ -267,35 +310,35 @@ Usage:
               fo = fo..v
             end
             log('"'..fo..'"', '[DEVEL]', true)
-            table.insert(fileOut, #fileOut+1, fo)
+            insert(fileOut, #fileOut+1, fo)
 
           elseif line:sub(1, 9) == '#LICENSE ' then
             log('#LICENSE', '[DEVEL]', true)
             local lt = tokenize(line:sub(10))
             assert(#lt>=1, '#LICENSE directive on line '..LINENUM..' in '..path..' did not specify a license')
             local p = lt[1]
-            table.remove(lt, 1)
+            remove(lt, 1)
             for k,v in ipairs(lt) do
               local d = v:find(':')
               assert(d, '#LICENSE on line '..LINENUM..' in '..path..' contained an\ninvalid VAR:DEF structure')
               VAR[v:sub(1, d-1)] = v:sub(d+1)
             end
-            log('Table VAR:\n'..textutils.serialize(VAR), '[DEVEL]', true)
+            log('Table VAR:\n'..serialize(VAR), '[DEVEL]', true)
             if LICENSES[VAR.MODULE] and LICENSES[VAR.MODULE].isLicensed then
               log(VAR.MODULE..' already has a license', '[WARNING]')
             else
               LICENSES[VAR.MODULE] = {}
               LICENSES[VAR.MODULE].isLicensed = p
-              log('Table LICENSES:\n'..textutils.serialize(LICENSES), '[DEVEL]', true)
-              local fn = fs.combine(CLUA_LIB..'/LICENSE', p)
+              log('Table LICENSES:\n'..serialize(LICENSES), '[DEVEL]', true)
+              local fn = combine(CLUA_LIB..'/LICENSE', p)
               log(fn, '[DEVEL]', true)
-              assert(fs.exists(fn), '#LICENSE pointed to a non-existant file on line '..LINENUM..' in '..path)
-              assert(not fs.isDir(fn), '#LICENSE pointed to a folder instead of a file on line '..LINENUM..' in '..path)
+              assert(exists(fn), '#LICENSE pointed to a non-existant file on line '..LINENUM..' in '..path)
+              assert(not isDir(fn), '#LICENSE pointed to a folder instead of a file on line '..LINENUM..' in '..path)
               local fo = parseFile(fn, VAR.MODULE)
               if not dryRun then
                 --write parsed source table to output file
                 log('Writing source table to '..licensePath..'...')
-                local outFile = fs.open(licensePath, 'a')
+                local outFile = open(licensePath, 'a')
                 for ln,line in ipairs(fo) do
                   outFile.writeLine(line)
                 end
@@ -329,13 +372,13 @@ Usage:
               DEFINE[name] = {path, LINENUM}
               log('Defined "'..name..'"', '[DEBUG]', true)
             end
-            log('Table DEFINE:\n'..textutils.serialize(DEFINE), '[DEVEL]', true)
-            log('Table WARNLOOP:\n'..textutils.serialize(WARNLOOP), '[DEVEL]', true)
+            log('Table DEFINE:\n'..serialize(DEFINE), '[DEVEL]', true)
+            log('Table WARNLOOP:\n'..serialize(WARNLOOP), '[DEVEL]', true)
 
           elseif line == '#SNIPPET' then -- ignore all directives until the end of the file
             log('#SNIPPET', '[DEVEL]', true)
             log('Handling '..path..' as a snippet...', '[OKAY]')
-            table.remove(file, curLine) -- remove #SNIPPET directive so we don't warn about 'ignoring' it
+            remove(file, curLine) -- remove #SNIPPET directive so we don't warn about 'ignoring' it
             while true do
               local tl = file[curLine]
               if not tl then break end
@@ -344,7 +387,7 @@ Usage:
               else -- directives should never be in snippets, so this is logged as a warning
                 log('Ignoring directive in snippet: '..tl, '[WARNING]')
               end
-              table.remove(file, curLine)
+              remove(file, curLine)
             end
 
           elseif line:sub(1,6) == '#EXEC ' then
@@ -366,7 +409,7 @@ Usage:
             while true do
               local tl = file[curLine]
               log('removing '..tl, '[DEVEL]', true)
-              table.remove(file, curLine)
+              remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
                 if l == v then depth = depth+1 end
@@ -375,7 +418,7 @@ Usage:
                 if l == v then depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
-              if tl == '#ENDIFVAR' and depth == 0 then table.insert(file, 1, '') break end
+              if tl == '#ENDIFVAR' and depth == 0 then insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('Table ft: '..#ft, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
@@ -396,7 +439,7 @@ Usage:
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1], '[DEVEL]', true)
-              table.remove(ft, 1)
+              remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
               LINENUM = LINENUM+1
@@ -416,7 +459,7 @@ Usage:
             while true do
               local tl = file[curLine]
               log('removing '..tl, '[DEVEL]', true)
-              table.remove(file, curLine)
+              remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
                 if l == v then depth = depth+1 end
@@ -425,7 +468,7 @@ Usage:
                 if l == v then depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
-              if tl == '#ENDIFNVAR' and depth == 0 then table.insert(file, 1, '') break end
+              if tl == '#ENDIFNVAR' and depth == 0 then insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('Table ft: '..#ft, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
@@ -446,7 +489,7 @@ Usage:
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1], '[DEVEL]', true)
-              table.remove(ft, 1)
+              remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
               LINENUM = LINENUM+1
@@ -465,7 +508,7 @@ Usage:
             while true do
               local tl = file[curLine]
               log('removing '..tl..' from file', '[DEVEL]', true)
-              table.remove(file, curLine)
+              remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
                 if l == v then depth = depth+1 end
@@ -476,7 +519,7 @@ Usage:
               log('Depth: '..depth, '[DEVEL]', true)
               log('Table ft: '..#ft, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
-              if tl == '#ENDIFDEF' and depth == 0 then table.insert(file, 1, '') break end
+              if tl == '#ENDIFDEF' and depth == 0 then insert(file, 1, '') break end
               ft[#ft+1] = tl
               log('curLine: '..curLine, '[DEVEL]', true)
               log('LINENUM: '..LINENUM, '[DEVEL]', true)
@@ -493,7 +536,7 @@ Usage:
             if DEFINE[name] then
               log('Definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1]..' from ft', '[DEVEL]', true)
-              table.remove(ft, 1)
+              remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
               LINENUM = LINENUM+1
@@ -511,7 +554,7 @@ Usage:
             while true do
               local tl = file[curLine]
               log('removing '..tl..' from file', '[DEVEL]', true)
-              table.remove(file, curLine)
+              remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
                 if l == v then depth = depth+1 end
@@ -522,7 +565,7 @@ Usage:
               log('Depth: '..depth, '[DEVEL]', true)
               log('Table ft: '..#ft, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
-              if tl == '#ENDIFNDEF' and depth == 0 then table.insert(file, 1, '')  break end
+              if tl == '#ENDIFNDEF' and depth == 0 then insert(file, 1, '')  break end
               ft[#ft+1] = tl
               log('curLine: '..curLine, '[DEVEL]', true)
               log('LINENUM: '..LINENUM, '[DEVEL]', true)
@@ -539,7 +582,7 @@ Usage:
             if not DEFINE[name] then
               log('No definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1]..' from ft', '[DEVEL]', true)
-              table.remove(ft, 1)
+              remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
               LINENUM = LINENUM+1
@@ -625,11 +668,11 @@ Usage:
 
       elseif v == 'log' then
         doLog = true
-        if fs.exists(CLUA_LOG) then
-          if fs.exists(CLUA_LOG..'.old') then
-            fs.delete(CLUA_LOG..'.old')
+        if exists(CLUA_LOG) then
+          if exists(CLUA_LOG..'.old') then
+            delete(CLUA_LOG..'.old')
           end
-          fs.move(CLUA_LOG, CLUA_LOG..'.old')
+          move(CLUA_LOG, CLUA_LOG..'.old')
         end
 
       elseif v =='no-trim' then
@@ -655,9 +698,9 @@ Usage:
 
       elseif v == 'rs' then -- Hecka undocumented! Hard to use! Almost pointless! HELL YEAH!
         doRS = true
-        rs.setOutput('right', false)
-        rs.setOutput('left', false)
-        rs.setOutput('top', false)
+        setOutput('right', false)
+        setOutput('left', false)
+        setOutput('top', false)
 
       elseif v == 'help' then
         return printUsage()
@@ -670,7 +713,7 @@ Usage:
         return shell.run(CLUA_HOME..'temp-clua-updater') -- will remove itself post-install
 
       elseif v:sub(1,3) == 'dyn' then -- e.g.: --dyn:version=1.2.7;license=GPLv3
-        local lt = tokenize(line:sub(5), ';')
+        local lt = tokenize(v:sub(5), ';')
         for _,i in ipairs(lt) do
           local d = i:find('=')
           assert(d, 'Option dyn (#'..k..') contained an\ninvalid VAR=DEF structure:\n'..i)
@@ -730,9 +773,9 @@ Usage:
   log('Output File: '..outFileName, '[DEBUG]', true)
   log('License Path: '..licensePath, '[DEBUG]', true)
 
-  if fs.exists(licensePath) then
-    assert(not fs.isDir(licensePath), licensePath..' is a directory')
-    fs.delete(licensePath)
+  if exists(licensePath) then
+    assert(not isDir(licensePath), licensePath..' is a directory')
+    delete(licensePath)
   end
 
   --PHASE: parse
@@ -743,7 +786,7 @@ Usage:
     --write parsed source table to output file
     log('Writing source table to '..outFileName..'...')
     local trimCount = 0
-    local outFile = fs.open(outFileName, 'w')
+    local outFile = open(outFileName, 'w')
     for ln,line in ipairs(tSrc) do
       log(outFileName..':'..ln..': '..line, '[DEVEL]', true)
       if line ~= '' or preserveFormatting then
