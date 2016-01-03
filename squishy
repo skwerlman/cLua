@@ -1,0 +1,4 @@
+Option "minify-level" "full"
+Option "uglify" "full"
+Output "cLua-install.squishy.lua"
+Main "cLua-install.lua"
