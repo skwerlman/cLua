@@ -12,7 +12,7 @@ end
 local function log(msg, tag)
   tag = tag or (msg and '[OKAY]' or '[ERROR]')
   msg = msg or 'No message passed to log!'
-  logFile = fs.open(logName, 'a')
+  local logFile = fs.open(logName, 'a')
   logFile.writeLine('['..os.time()..']'..tag..msg)
   logFile.close()
   print(msg)
