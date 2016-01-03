@@ -1,18 +1,18 @@
-local r='2.0.0'local i=false
-local e='/clua-install.log'local s=true
-local o={}if fs.exists(e)then
+local r='2.0.0'local o=false
+local e='/clua-install.log'local i=true
+local s={}if fs.exists(e)then
 if fs.exists(e..'.old')then
 fs.delete(e..'.old')end
 fs.move(e,e..'.old')end
-local function l(t,n)n=n or(t and'[OKAY]'or'[ERROR]')t=t or'No message passed to log!'logFile=fs.open(e,'a')logFile.writeLine('['..os.time()..']'..n..t)logFile.close()print(t)end
+local function l(t,n)n=n or(t and'[OKAY]'or'[ERROR]')t=t or'No message passed to log!'local e=fs.open(e,'a')e.writeLine('['..os.time()..']'..n..t)e.close()print(t)end
 l("http: "..tostring(http and true or false),http and'[OKAY]'or'[ERROR]')assert(http,"You'll need http enabled to install CLua.")local t
-local n="Where would you like to install CLua?"if not CLUA_HOME then
+local e="Where would you like to install CLua?"if not CLUA_HOME then
 while true do
-print(n)t=read()if fs.isDir(t)then break end
-n=""print("The path you provided doesn't exist. Would you like to create it? (Y/n)")local e=read()if e=='y'or e=='Y'or e==''then
+print(e)t=read()if fs.isDir(t)then break end
+e=""print("The path you provided doesn't exist. Would you like to create it? (Y/n)")local l=read()if l=='y'or l=='Y'or l==''then
 fs.makeDir(t)break
 else
-n="Please enter the location where you'd like CLua to be installed:"end
+e="Please enter the location where you'd like CLua to be installed:"end
 end
 else
 t=CLUA_HOME
@@ -40,25 +40,25 @@ e[#e+1]=t
 end
 n.close()l('Injecting CLua globals into source table...')table.insert(e,1,"-- END CLUA GLOBALS")table.insert(e,1,"end")table.insert(e,1,"  fs.delete(CLUA_HOME..'/temp-clua-updater')")table.insert(e,1,"if fs.exists(CLUA_HOME..'/temp-clua-updater') then")table.insert(e,1,"shell.setAlias('clua', CLUA)")table.insert(e,1,"_G.CLUA_LOG = CLUA_HOME..'clua.log'")table.insert(e,1,"_G.CLUA_LIB = CLUA_HOME..'lib'")table.insert(e,1,"_G.CLUA = CLUA_HOME..'clua.lua'")table.insert(e,1,"_G.CLUA_HOME = '"..t.."'")table.insert(e,1,"_G.CLUA_VERSION = '"..r.."'")table.insert(e,1,"-- CLua Copyright 2014 Skwerlman")table.insert(e,1,a)table.insert(e,1,"-- BEGIN CLUA GLOBALS")l('Constructing startup from source table...')local n=fs.open('/startup','w')for t,e in ipairs(e)do
 n.writeLine(e)end
-n.close()l('Beginning downloader...')l('isDebug:'..tostring(i),'[DEBUG]')local e={'clua.lua','LICENSE','lib/CRC32','lib/LUABIT','lib/SPLASH','lib/JSON','lib/RANDOM','lib/LICENSE/GPLv2','lib/LICENSE/MIT','lib/LICENSE/UNKNOWN'}local n='https://raw.github.com/skwerlman/Clua/master/'if i then
+n.close()l('Beginning downloader...')l('isDebug:'..tostring(o),'[DEBUG]')local e={'clua.lua','LICENSE','lib/CRC32','lib/LUABIT','lib/SPLASH','lib/JSON','lib/RANDOM','lib/LICENSE/GPLv2','lib/LICENSE/MIT','lib/LICENSE/UNKNOWN'}local n='https://raw.github.com/skwerlman/Clua/master/'if o then
 n='https://raw.github.com/skwerlman/Clua/dev/'end
 for a=1,#e do
-local e=e[a]local i
+local e=e[a]local o
 local a=http.get(n..e,{['User-Agent']='CLua-install Autodownloader'})if a then
 if a.getResponseCode()==200 then
-i=a.readAll()else
-s=false
-o[#o+1]="Unexpected response code "..a.getResponseCode()end
+o=a.readAll()else
+i=false
+s[#s+1]="Unexpected response code "..a.getResponseCode()end
 a.close()end
-if i and i~=''then
-local o=fs.open(t..e,'w')o.write(i,'w')o.close()l(n..e..' ===> '..t..e,'[OKAY]')else
-l(n..e..' =X=> '..t..e,'[ERROR]')sleep(.3)s=false
-o[#o+1]="Couldn't download "..n..e
+if o and o~=''then
+local a=fs.open(t..e,'w')a.write(o,'w')a.close()l(n..e..' ===> '..t..e,'[OKAY]')else
+l(n..e..' =X=> '..t..e,'[ERROR]')sleep(.3)i=false
+s[#s+1]="Couldn't download "..n..e
 end
 end
-if s then
+if i then
 l('Install completed successfully')else
-l('Install failed.','[ERROR]')l('Reason(s):','[ERROR]')for t,e in ipairs(o)do
+l('Install failed.','[ERROR]')l('Reason(s):','[ERROR]')for t,e in ipairs(s)do
 l(e,'[ERROR]')end
 print('See clua-install.log for more info')end
 print('Rebooting to apply environment settings...')sleep(3)os.reboot()
