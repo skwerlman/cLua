@@ -400,33 +400,51 @@ Usage:
             --execEnv=getfenv(func)
             assert(ret, type(err) == 'string' and errmsg..'\n'..tostring(err) or errmsg..'\nNo error message available')
 
-          elseif line:sub(1,7) == '#IFVAR ' then
+          elseif line:sub(1, 7) == '#IFVAR ' then
             log('#IFVAR', '[DEVEL]', true)
             local name = line:sub(8)
             local ft = {}
-            local ol = LINENUM
+            local et = {}
+            local el = {}
             local depth = 0
             while true do
               local tl = file[curLine]
-              log('removing '..tl, '[DEVEL]', true)
+              log('removing '..tl..' from file', '[DEVEL]', true)
               remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if l == v then depth = depth+1 end
+                if l == v then depth = depth+1 et[depth] = et[depth] or {} el[depth] = false end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if l == v then depth = depth-1 end
+                if l == v then el[depth] = false depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
-              if tl == '#ENDIFVAR' and depth == 0 then insert(file, 1, '') break end
-              ft[#ft+1] = tl
               log('Table ft: '..#ft, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
+              if tl == '#ENDIFVAR' and depth == 0 then insert(file, 1, '') break end
+              if tl == '#ELSE' then el[depth] = true end
+              if tl ~= '#ELSE' and not el[depth] then
+                ft[#ft+1] = tl
+              elseif tl ~= '#ELSE' then
+                log('tl: '..tl, '[DEVEL]', true)
+                log('el[d]: '..tostring(el[depth]), '[DEVEL]', true)
+                log('el: '..textutils.serialize(el), '[DEVEL]', true)
+                et[depth][#et[depth]+1] = tl
+              end
+              log('curLine: '..curLine, '[DEVEL]', true)
+              log('LINENUM: '..LINENUM, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
               if curLine > #file then
                 assert(false, 'No matching #ENDIFVAR found for #IFVAR on line '..LINENUM..' in '..path)
               end
             end
-            local errmsg = 'IFVAR directive at line '..ol..' in '..path..' threw an error.'
+            log('curLine: '..curLine, '[DEVEL]', true)
+            log('LINENUM: '..LINENUM, '[DEVEL]', true)
+            log('#file: '..#file, '[DEVEL]', true)
+            log('Table ft: '..textutils.serialize(ft), '[DEVEL]', true)
+            log('Table et: '..textutils.serialize(et), '[DEVEL]', true)
+            log('Table file: '..#file, '[DEVEL]', true)
+            local errmsg = 'IFVAR directive at line '..LINENUM..' in '..path..' threw an error.'
             local ret, data = loadstring('return '..name) -- we use this instead of _G[name] b/c we get more control over the environment this way
             assert(ret, type(data) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
             local val = ret
@@ -434,69 +452,89 @@ Usage:
             ret, data = pcall(ret)
             assert(ret, type(data) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
             ret = val()
-            --execEnv=getfenv(val)
             if ret then
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
-              log('removing '..ft[1], '[DEVEL]', true)
+              log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
-              LINENUM = LINENUM+1
+              LINENUM = LINENUM+2
             else
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('No definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM+#ft
+              local fo = parseLines(et[1], path) -- willfully ignore else clauses beyond the first
+              fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             end
             log('#ENDIFVAR', '[DEVEL]', true)
 
-          elseif line:sub(1,8) == '#IFNVAR ' then
+          elseif line:sub(1, 8) == '#IFNVAR ' then
             log('#IFNVAR', '[DEVEL]', true)
-            local name = line:sub(8)
+            local name = line:sub(9)
             local ft = {}
-            local ol = LINENUM
+            local et = {}
+            local el = {}
             local depth = 0
             while true do
               local tl = file[curLine]
-              log('removing '..tl, '[DEVEL]', true)
+              log('removing '..tl..' from file', '[DEVEL]', true)
               remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if l == v then depth = depth+1 end
+                if l == v then depth = depth+1 et[depth] = et[depth] or {} el[depth] = false end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if l == v then depth = depth-1 end
+                if l == v then el[depth] = false depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
-              if tl == '#ENDIFNVAR' and depth == 0 then insert(file, 1, '') break end
-              ft[#ft+1] = tl
               log('Table ft: '..#ft, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
+              if tl == '#ENDIFNVAR' and depth == 0 then insert(file, 1, '') break end
+              if tl == '#ELSE' then el[depth] = true end
+              if tl ~= '#ELSE' and not el[depth] then
+                ft[#ft+1] = tl
+              elseif tl ~= '#ELSE' then
+                log('tl: '..tl, '[DEVEL]', true)
+                log('el[d]: '..tostring(el[depth]), '[DEVEL]', true)
+                log('el: '..textutils.serialize(el), '[DEVEL]', true)
+                et[depth][#et[depth]+1] = tl
+              end
+              log('curLine: '..curLine, '[DEVEL]', true)
+              log('LINENUM: '..LINENUM, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
               if curLine > #file then
                 assert(false, 'No matching #ENDIFNVAR found for #IFNVAR on line '..LINENUM..' in '..path)
               end
             end
-            local errmsg = 'IFNVAR directive at line '..ol..' in '..path..' threw an error.'
-            local ret, data = loadstring('return '..name)
+            log('curLine: '..curLine, '[DEVEL]', true)
+            log('LINENUM: '..LINENUM, '[DEVEL]', true)
+            log('#file: '..#file, '[DEVEL]', true)
+            log('Table ft: '..textutils.serialize(ft), '[DEVEL]', true)
+            log('Table et: '..textutils.serialize(et), '[DEVEL]', true)
+            log('Table file: '..#file, '[DEVEL]', true)
+            local errmsg = 'IFNVAR directive at line '..LINENUM..' in '..path..' threw an error.'
+            local ret, data = loadstring('return '..name) -- we use this instead of _G[name] b/c we get more control over the environment this way
             assert(ret, type(data) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
             local val = ret
             setfenv(ret,execEnv)
             ret, data = pcall(ret)
             assert(ret, type(data) == 'string' and errmsg..'\n'..data or errmsg..'\nNo error message available')
             ret = val()
-            --execEnv=getfenv(val)
             if not ret then
               log(name..'=='..tostring(ret), '[DEVEL]', true)
-              log('Definition found for '..name, '[DEBUG]', true)
-              log('removing '..ft[1], '[DEVEL]', true)
+              log('No definition found for '..name, '[DEBUG]', true)
+              log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               remove(ft, 1)
               local fo = parseLines(ft, path)
               fileOut = concat(fileOut, fo)
-              LINENUM = LINENUM+1
+              LINENUM = LINENUM+2
             else
               log(name..'=='..tostring(ret), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM+#ft
+              local fo = parseLines(et[1], path) -- willfully ignore else clauses beyond the first
+              fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             end
             log('#ENDIFNVAR', '[DEVEL]', true)
 
@@ -504,6 +542,8 @@ Usage:
             log('#IFDEF', '[DEVEL]', true)
             local name = line:sub(8)
             local ft = {}
+            local et = {}
+            local el = {}
             local depth = 0
             while true do
               local tl = file[curLine]
@@ -511,19 +551,27 @@ Usage:
               remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if l == v then depth = depth+1 end
+                if l == v then depth = depth+1 et[depth] = et[depth] or {} el[depth] = false end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if l == v then depth = depth-1 end
+                if l == v then el[depth] = false depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
               log('Table ft: '..#ft, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
               if tl == '#ENDIFDEF' and depth == 0 then insert(file, 1, '') break end
-              ft[#ft+1] = tl
+              if tl == '#ELSE' then el[depth] = true end
+              if tl ~= '#ELSE' and not el[depth] then
+                ft[#ft+1] = tl
+              elseif tl ~= '#ELSE' then
+                log('tl: '..tl, '[DEVEL]', true)
+                log('el[d]: '..tostring(el[depth]), '[DEVEL]', true)
+                log('el: '..textutils.serialize(el), '[DEVEL]', true)
+                et[depth][#et[depth]+1] = tl
+              end
               log('curLine: '..curLine, '[DEVEL]', true)
               log('LINENUM: '..LINENUM, '[DEVEL]', true)
-              log('#file: '..#file, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
               if curLine > #file then
                 assert(false, 'No matching #ENDIFDEF found for #IFDEF on line '..LINENUM..' in '..path)
               end
@@ -531,9 +579,11 @@ Usage:
             log('curLine: '..curLine, '[DEVEL]', true)
             log('LINENUM: '..LINENUM, '[DEVEL]', true)
             log('#file: '..#file, '[DEVEL]', true)
-            log('Table ft: '..#ft, '[DEVEL]', true)
+            log('Table ft: '..textutils.serialize(ft), '[DEVEL]', true)
+            log('Table et: '..textutils.serialize(et), '[DEVEL]', true)
             log('Table file: '..#file, '[DEVEL]', true)
             if DEFINE[name] then
+              log(name..'=='..tostring(name), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               remove(ft, 1)
@@ -541,8 +591,11 @@ Usage:
               fileOut = concat(fileOut, fo)
               LINENUM = LINENUM+1
             else
+              log(name..'=='..tostring(name), '[DEVEL]', true)
               log('No definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM+#ft
+              local fo = parseLines(et[1], path) -- willfully ignore else clauses beyond the first
+              fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             end
             log('#ENDIFDEF', '[DEVEL]', true)
 
@@ -550,6 +603,8 @@ Usage:
             log('#IFNDEF', '[DEVEL]', true)
             local name = line:sub(9)
             local ft = {}
+            local et = {}
+            local el = {}
             local depth = 0
             while true do
               local tl = file[curLine]
@@ -557,19 +612,27 @@ Usage:
               remove(file, curLine)
               local l = tokenize(tl)[1]
               for _,v in ipairs({'#IFVAR', '#IFNVAR', '#IFDEF', '#IFNDEF'}) do
-                if l == v then depth = depth+1 end
+                if l == v then depth = depth+1 et[depth] = et[depth] or {} el[depth] = false end
               end
               for _,v in ipairs({'#ENDIFVAR', '#ENDIFNVAR', '#ENDIFDEF', '#ENDIFNDEF'}) do
-                if l == v then depth = depth-1 end
+                if l == v then el[depth] = false depth = depth-1 end
               end
               log('Depth: '..depth, '[DEVEL]', true)
               log('Table ft: '..#ft, '[DEVEL]', true)
               log('Table file: '..#file, '[DEVEL]', true)
-              if tl == '#ENDIFNDEF' and depth == 0 then insert(file, 1, '')  break end
-              ft[#ft+1] = tl
+              if tl == '#ENDIFNDEF' and depth == 0 then insert(file, 1, '') break end
+              if tl == '#ELSE' then el[depth] = true end
+              if tl ~= '#ELSE' and not el[depth] then
+                ft[#ft+1] = tl
+              elseif tl ~= '#ELSE' then
+                log('tl: '..tl, '[DEVEL]', true)
+                log('el[d]: '..tostring(el[depth]), '[DEVEL]', true)
+                log('el: '..textutils.serialize(el), '[DEVEL]', true)
+                et[depth][#et[depth]+1] = tl
+              end
               log('curLine: '..curLine, '[DEVEL]', true)
               log('LINENUM: '..LINENUM, '[DEVEL]', true)
-              log('#file: '..#file, '[DEVEL]', true)
+              log('Table file: '..#file, '[DEVEL]', true)
               if curLine > #file then
                 assert(false, 'No matching #ENDIFNDEF found for #IFNDEF on line '..LINENUM..' in '..path)
               end
@@ -577,9 +640,11 @@ Usage:
             log('curLine: '..curLine, '[DEVEL]', true)
             log('LINENUM: '..LINENUM, '[DEVEL]', true)
             log('#file: '..#file, '[DEVEL]', true)
-            log('Table ft: '..#ft, '[DEVEL]', true)
+            log('Table ft: '..textutils.serialize(ft), '[DEVEL]', true)
+            log('Table et: '..textutils.serialize(et), '[DEVEL]', true)
             log('Table file: '..#file, '[DEVEL]', true)
             if not DEFINE[name] then
+              log(name..'=='..tostring(name), '[DEVEL]', true)
               log('No definition found for '..name, '[DEBUG]', true)
               log('removing '..ft[1]..' from ft', '[DEVEL]', true)
               remove(ft, 1)
@@ -587,8 +652,11 @@ Usage:
               fileOut = concat(fileOut, fo)
               LINENUM = LINENUM+1
             else
+              log(name..'=='..tostring(name), '[DEVEL]', true)
               log('Definition found for '..name, '[DEBUG]', true)
-              LINENUM = LINENUM+#ft
+              local fo = parseLines(et[1], path) -- willfully ignore else clauses beyond the first
+              fileOut = concat(fileOut, fo)
+              LINENUM = LINENUM+1
             end
             log('#ENDIFNDEF', '[DEVEL]', true)
 
