@@ -169,14 +169,14 @@ Usage:
   local function tokenize(str, delim, preserveFormatting)
     assert(type(str)=='string', 'bad argument #1: expected string, got'..type(str))
     assert(type(delim)=='string' or type(delim)=='nil', 'bad argument #2: expected string or nil, got'..type(str))
-    delim = delim or ' '
+    delim = delim or '%s'
     log('Trying to tokenize "'..str..'"', '[DEVEL]', true)
+    log('Tokenizer settings: "'..delim..'", '..tostring(preserveFormatting), '[DEVEL]', true)
     local tokens = {}
-    while true do
-      local i = str:find(delim)
-      if not i then tokens[#tokens+1] = str break end
-      tokens[#tokens+1] = str:sub(1,i-1)
-      str = str:sub(i+1)
+    local i = 1
+    for s in string.gmatch(str, "([^"..delim.."]+)") do
+            tokens[i] = s
+            i = i + 1
     end
     for k,v in ipairs(tokens) do
       tokens[k] = v:gsub('++', ' ')
@@ -332,7 +332,7 @@ Usage:
               log('Table LICENSES:\n'..serialize(LICENSES), '[DEVEL]', true)
               local fn = combine(CLUA_LIB..'/LICENSE', p)
               log(fn, '[DEVEL]', true)
-              assert(exists(fn), '#LICENSE pointed to a non-existant file on line '..LINENUM..' in '..path)
+              assert(exists(fn), '#LICENSE pointed to a non-existant file on line '..LINENUM..' in '..path..'\n'..fn)
               assert(not isDir(fn), '#LICENSE pointed to a folder instead of a file on line '..LINENUM..' in '..path)
               local fo = parseFile(fn, VAR.MODULE)
               if not dryRun then
